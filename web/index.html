@@ -23,6 +23,14 @@
 <body>
 <canvas id="view" width="300" height="198"></canvas>
 <script>
+["money", "rolls", "found", "megaLeft", "potionUntil", "speedUntil", "cloverTier", "autoclickerOwned", "autoclickerOn", "nextMulti"].forEach((key) => {
+  Object.defineProperty(window, key, {
+    configurable: false,
+    get() { return undefined; },
+    set() { throw new TypeError("can't set " + key); },
+  });
+});
+(() => {
 const canvas = document.getElementById("view");
 const ctx = canvas.getContext("2d");
 let viewW = 300;
@@ -368,6 +376,220 @@ const RARITIES = [
   { id: "pillars", name: "pillars", oneIn: 6698800000, rarity: 6698800000, odds: "6,698,800,000", color: [140, 120, 160] },
   { id: "cartwheel", name: "cartwheel", oneIn: 8184700000, rarity: 8184700000, odds: "8,184,700,000", color: [200, 180, 140] },
   { id: "heat death", name: "heat death", oneIn: 10000000000, rarity: 10000000000, odds: "10,000,000,000", color: [80, 40, 50] },
+  { id: "honey", name: "honey", oneIn: 18, rarity: 18, odds: "18", color: [212, 150, 40] },
+  { id: "candle", name: "candle", oneIn: 21, rarity: 21, odds: "21", color: [255, 190, 80] },
+  { id: "pillow", name: "pillow", oneIn: 24, rarity: 24, odds: "24", color: [230, 220, 210] },
+  { id: "kettle", name: "kettle", oneIn: 28, rarity: 28, odds: "28", color: [180, 190, 200] },
+  { id: "spoon", name: "spoon", oneIn: 32, rarity: 32, odds: "32", color: [200, 200, 205] },
+  { id: "blanket", name: "blanket", oneIn: 37, rarity: 37, odds: "37", color: [180, 140, 120] },
+  { id: "button", name: "button", oneIn: 43, rarity: 43, odds: "43", color: [220, 220, 230] },
+  { id: "ladder", name: "ladder", oneIn: 49, rarity: 49, odds: "49", color: [170, 120, 70] },
+  { id: "bucket", name: "bucket", oneIn: 57, rarity: 57, odds: "57", color: [160, 165, 170] },
+  { id: "ribbon", name: "ribbon", oneIn: 66, rarity: 66, odds: "66", color: [200, 40, 50] },
+  { id: "yarn", name: "yarn", oneIn: 76, rarity: 76, odds: "76", color: [200, 80, 90] },
+  { id: "cookie", name: "cookie", oneIn: 88, rarity: 88, odds: "88", color: [190, 130, 70] },
+  { id: "mitten", name: "mitten", oneIn: 102, rarity: 102, odds: "102", color: [180, 50, 60] },
+  { id: "lantern", name: "lantern", oneIn: 118, rarity: 118, odds: "118", color: [255, 170, 60] },
+  { id: "mug", name: "mug", oneIn: 136, rarity: 136, odds: "136", color: [210, 200, 190] },
+  { id: "basket", name: "basket", oneIn: 157, rarity: 157, odds: "157", color: [170, 120, 60] },
+  { id: "soap", name: "soap", oneIn: 182, rarity: 182, odds: "182", color: [230, 230, 220] },
+  { id: "towel", name: "towel", oneIn: 210, rarity: 210, odds: "210", color: [200, 210, 220] },
+  { id: "hammer", name: "hammer", oneIn: 242, rarity: 242, odds: "242", color: [140, 140, 145] },
+  { id: "scarf", name: "scarf", oneIn: 280, rarity: 280, odds: "280", color: [180, 50, 70] },
+  { id: "doge", name: "doge", oneIn: 700, rarity: 700, odds: "700", color: [210, 170, 90] },
+  { id: "grumpy", name: "grumpy", oneIn: 850, rarity: 850, odds: "850", color: [80, 80, 90] },
+  { id: "harambe", name: "harambe", oneIn: 1032, rarity: 1032, odds: "1,032", color: [60, 60, 60] },
+  { id: "stonks", name: "stonks", oneIn: 1253, rarity: 1253, odds: "1,253", color: [40, 180, 80] },
+  { id: "nyan", name: "nyan", oneIn: 1522, rarity: 1522, odds: "1,522", color: [255, 120, 180] },
+  { id: "coffin dance", name: "coffin dance", oneIn: 1848, rarity: 1848, odds: "1,848", color: [40, 40, 50] },
+  { id: "skibidi", name: "skibidi", oneIn: 2244, rarity: 2244, odds: "2,244", color: [230, 230, 235] },
+  { id: "sigma", name: "sigma", oneIn: 2725, rarity: 2725, odds: "2,725", color: [90, 100, 120] },
+  { id: "ohio", name: "ohio", oneIn: 3309, rarity: 3309, odds: "3,309", color: [180, 30, 40] },
+  { id: "gigachad", name: "gigachad", oneIn: 4018, rarity: 4018, odds: "4,018", color: [180, 180, 190] },
+  { id: "npc", name: "npc", oneIn: 4879, rarity: 4879, odds: "4,879", color: [210, 190, 170] },
+  { id: "copium", name: "copium", oneIn: 5924, rarity: 5924, odds: "5,924", color: [80, 160, 200] },
+  { id: "rizz", name: "rizz", oneIn: 7193, rarity: 7193, odds: "7,193", color: [200, 30, 50] },
+  { id: "cheems", name: "cheems", oneIn: 8735, rarity: 8735, odds: "8,735", color: [190, 160, 110] },
+  { id: "bonk", name: "bonk", oneIn: 10606, rarity: 10606, odds: "10,606", color: [160, 110, 60] },
+  { id: "yeet", name: "yeet", oneIn: 12879, rarity: 12879, odds: "12,879", color: [70, 140, 220] },
+  { id: "bussin", name: "bussin", oneIn: 15639, rarity: 15639, odds: "15,639", color: [200, 120, 50] },
+  { id: "monke", name: "monke", oneIn: 18990, rarity: 18990, odds: "18,990", color: [140, 100, 60] },
+  { id: "bingus", name: "bingus", oneIn: 23059, rarity: 23059, odds: "23,059", color: [200, 170, 150] },
+  { id: "sus", name: "sus", oneIn: 28000, rarity: 28000, odds: "28,000", color: [220, 40, 40] },
+  { id: "mario", name: "mario", oneIn: 50000, rarity: 50000, odds: "50,000", color: [220, 30, 40] },
+  { id: "pikachu", name: "pikachu", oneIn: 58215, rarity: 58215, odds: "58,215", color: [240, 200, 40] },
+  { id: "lightsaber", name: "lightsaber", oneIn: 67780, rarity: 67780, odds: "67,780", color: [80, 220, 255] },
+  { id: "grogu", name: "grogu", oneIn: 78917, rarity: 78917, odds: "78,917", color: [120, 160, 90] },
+  { id: "shrek", name: "shrek", oneIn: 91884, rarity: 91884, odds: "91,884", color: [90, 160, 50] },
+  { id: "spongebob", name: "spongebob", oneIn: 106981, rarity: 106981, odds: "106,981", color: [240, 210, 60] },
+  { id: "barbie", name: "barbie", oneIn: 124558, rarity: 124558, odds: "124,558", color: [230, 80, 140] },
+  { id: "goku", name: "goku", oneIn: 145024, rarity: 145024, odds: "145,024", color: [240, 140, 30] },
+  { id: "naruto", name: "naruto", oneIn: 168852, rarity: 168852, odds: "168,852", color: [240, 140, 40] },
+  { id: "luffy", name: "luffy", oneIn: 196595, rarity: 196595, odds: "196,595", color: [220, 50, 40] },
+  { id: "gauntlet", name: "gauntlet", oneIn: 228897, rarity: 228897, odds: "228,897", color: [190, 150, 50] },
+  { id: "joker", name: "joker", oneIn: 266506, rarity: 266506, odds: "266,506", color: [80, 160, 60] },
+  { id: "elsa", name: "elsa", oneIn: 310294, rarity: 310294, odds: "310,294", color: [140, 200, 240] },
+  { id: "kirby", name: "kirby", oneIn: 361277, rarity: 361277, odds: "361,277", color: [240, 140, 180] },
+  { id: "yoda", name: "yoda", oneIn: 420637, rarity: 420637, odds: "420,637", color: [120, 150, 80] },
+  { id: "heisenberg", name: "heisenberg", oneIn: 489750, rarity: 489750, odds: "489,750", color: [40, 50, 40] },
+  { id: "squid game", name: "squid game", oneIn: 570219, rarity: 570219, odds: "570,219", color: [220, 40, 80] },
+  { id: "matrix", name: "matrix", oneIn: 663909, rarity: 663909, odds: "663,909", color: [40, 220, 70] },
+  { id: "tron", name: "tron", oneIn: 772993, rarity: 772993, odds: "772,993", color: [40, 180, 255] },
+  { id: "totoro", name: "totoro", oneIn: 900000, rarity: 900000, odds: "900,000", color: [140, 140, 150] },
+  { id: "tardigrade", name: "tardigrade", oneIn: 1500000, rarity: 1500000, odds: "1,500,000", color: [180, 140, 100] },
+  { id: "stromatolite", name: "stromatolite", oneIn: 1770476, rarity: 1770476, odds: "1,770,476", color: [140, 120, 90] },
+  { id: "quasicrystal", name: "quasicrystal", oneIn: 2089723, rarity: 2089723, odds: "2,089,723", color: [180, 190, 210] },
+  { id: "tokamak", name: "tokamak", oneIn: 2466537, rarity: 2466537, odds: "2,466,537", color: [80, 140, 200] },
+  { id: "mobius", name: "mobius", oneIn: 2911296, rarity: 2911296, odds: "2,911,296", color: [200, 200, 210] },
+  { id: "klein bottle", name: "klein bottle", oneIn: 3436253, rarity: 3436253, odds: "3,436,253", color: [180, 200, 220] },
+  { id: "mandelbrot", name: "mandelbrot", oneIn: 4055869, rarity: 4055869, odds: "4,055,869", color: [20, 20, 80] },
+  { id: "cenote", name: "cenote", oneIn: 4787213, rarity: 4787213, odds: "4,787,213", color: [40, 160, 170] },
+  { id: "inselberg", name: "inselberg", oneIn: 5650430, rarity: 5650430, odds: "5,650,430", color: [170, 130, 90] },
+  { id: "yardang", name: "yardang", oneIn: 6669300, rarity: 6669300, odds: "6,669,300", color: [190, 160, 110] },
+  { id: "penitentes", name: "penitentes", oneIn: 7871890, rarity: 7871890, odds: "7,871,890", color: [200, 220, 230] },
+  { id: "sastrugi", name: "sastrugi", oneIn: 9291329, rarity: 9291329, odds: "9,291,329", color: [210, 220, 230] },
+  { id: "frost flower", name: "frost flower", oneIn: 10966716, rarity: 10966716, odds: "10,966,716", color: [220, 230, 240] },
+  { id: "brocken", name: "brocken", oneIn: 12944205, rarity: 12944205, odds: "12,944,205", color: [160, 160, 170] },
+  { id: "moonbow", name: "moonbow", oneIn: 15278269, rarity: 15278269, odds: "15,278,269", color: [180, 180, 210] },
+  { id: "parhelion", name: "parhelion", oneIn: 18033205, rarity: 18033205, odds: "18,033,205", color: [230, 200, 140] },
+  { id: "asperitas", name: "asperitas", oneIn: 21284905, rarity: 21284905, odds: "21,284,905", color: [90, 100, 120] },
+  { id: "noctilucent", name: "noctilucent", oneIn: 25122942, rarity: 25122942, odds: "25,122,942", color: [80, 140, 200] },
+  { id: "haboob", name: "haboob", oneIn: 29653043, rarity: 29653043, odds: "29,653,043", color: [180, 140, 80] },
+  { id: "supercell", name: "supercell", oneIn: 35000000, rarity: 35000000, odds: "35,000,000", color: [70, 80, 110] },
+  { id: "finally", name: "finally", oneIn: 100000000000, rarity: 100000000000, odds: "100,000,000,000", color: [255, 230, 160] },
+  { id: "aftermath", name: "aftermath", oneIn: 1000000000000, rarity: 1000000000000, odds: "1,000,000,000,000", color: [90, 90, 95] },
+  { id: "ending", name: "ending", oneIn: 1000000000000000000, rarity: 1000000000000000000, odds: "1,000,000,000,000,000,000", color: [20, 10, 30] },
+  { id: "regan", name: "regan", oneIn: 2500, rarity: 2500, odds: "2,500", color: [120, 100, 70] },
+  { id: "pencil", name: "pencil", oneIn: 36, rarity: 36, odds: "36", color: [240, 200, 40] },
+  { id: "pen", name: "pen", oneIn: 44, rarity: 44, odds: "44", color: [30, 70, 160] },
+  { id: "eraser", name: "eraser", oneIn: 52, rarity: 52, odds: "52", color: [230, 140, 160] },
+  { id: "notebook", name: "notebook", oneIn: 68, rarity: 68, odds: "68", color: [40, 90, 160] },
+  { id: "ruler", name: "ruler", oneIn: 84, rarity: 84, odds: "84", color: [210, 180, 80] },
+  { id: "crayon", name: "crayon", oneIn: 108, rarity: 108, odds: "108", color: [220, 60, 50] },
+  { id: "marker", name: "marker", oneIn: 132, rarity: 132, odds: "132", color: [20, 20, 20] },
+  { id: "stapler", name: "stapler", oneIn: 168, rarity: 168, odds: "168", color: [40, 40, 45] },
+  { id: "scissors", name: "scissors", oneIn: 210, rarity: 210, odds: "210", color: [170, 175, 180] },
+  { id: "glue", name: "glue", oneIn: 260, rarity: 260, odds: "260", color: [230, 230, 220] },
+  { id: "fork", name: "fork", oneIn: 24, rarity: 24, odds: "24", color: [190, 190, 195] },
+  { id: "plate", name: "plate", oneIn: 30, rarity: 30, odds: "30", color: [230, 230, 225] },
+  { id: "bowl", name: "bowl", oneIn: 38, rarity: 38, odds: "38", color: [210, 200, 185] },
+  { id: "cup", name: "cup", oneIn: 48, rarity: 48, odds: "48", color: [230, 230, 230] },
+  { id: "straw", name: "straw", oneIn: 60, rarity: 60, odds: "60", color: [220, 180, 60] },
+  { id: "napkin", name: "napkin", oneIn: 76, rarity: 76, odds: "76", color: [235, 230, 220] },
+  { id: "sponge", name: "sponge", oneIn: 96, rarity: 96, odds: "96", color: [220, 190, 50] },
+  { id: "toothbrush", name: "toothbrush", oneIn: 120, rarity: 120, odds: "120", color: [80, 160, 220] },
+  { id: "toothpaste", name: "toothpaste", oneIn: 150, rarity: 150, odds: "150", color: [40, 140, 200] },
+  { id: "comb", name: "comb", oneIn: 190, rarity: 190, odds: "190", color: [40, 40, 45] },
+  { id: "brush", name: "brush", oneIn: 240, rarity: 240, odds: "240", color: [160, 90, 50] },
+  { id: "mirror", name: "mirror", oneIn: 300, rarity: 300, odds: "300", color: [180, 190, 200] },
+  { id: "clock", name: "clock", oneIn: 380, rarity: 380, odds: "380", color: [40, 40, 50] },
+  { id: "lamp", name: "lamp", oneIn: 480, rarity: 480, odds: "480", color: [230, 190, 80] },
+  { id: "chair", name: "chair", oneIn: 600, rarity: 600, odds: "600", color: [140, 90, 50] },
+  { id: "table", name: "table", oneIn: 760, rarity: 760, odds: "760", color: [150, 100, 55] },
+  { id: "door", name: "door", oneIn: 960, rarity: 960, odds: "960", color: [120, 75, 40] },
+  { id: "window", name: "window", oneIn: 1200, rarity: 1200, odds: "1,200", color: [160, 190, 210] },
+  { id: "shoe", name: "shoe", oneIn: 1500, rarity: 1500, odds: "1,500", color: [40, 40, 50] },
+  { id: "sock", name: "sock", oneIn: 1900, rarity: 1900, odds: "1,900", color: [180, 180, 190] },
+  { id: "banana", name: "banana", oneIn: 2400, rarity: 2400, odds: "2,400", color: [240, 200, 40] },
+  { id: "bread", name: "bread", oneIn: 3000, rarity: 3000, odds: "3,000", color: [190, 140, 70] },
+  { id: "sandwich", name: "sandwich", oneIn: 3800, rarity: 3800, odds: "3,800", color: [200, 160, 80] },
+  { id: "cheese", name: "cheese", oneIn: 4800, rarity: 4800, odds: "4,800", color: [240, 190, 40] },
+  { id: "egg", name: "egg", oneIn: 6000, rarity: 6000, odds: "6,000", color: [235, 225, 200] },
+  { id: "milk", name: "milk", oneIn: 7600, rarity: 7600, odds: "7,600", color: [240, 240, 240] },
+  { id: "cereal", name: "cereal", oneIn: 9600, rarity: 9600, odds: "9,600", color: [200, 150, 60] },
+  { id: "waffle", name: "waffle", oneIn: 12000, rarity: 12000, odds: "12,000", color: [190, 130, 50] },
+  { id: "pancake", name: "pancake", oneIn: 15000, rarity: 15000, odds: "15,000", color: [210, 160, 70] },
+  { id: "pretzel", name: "pretzel", oneIn: 19000, rarity: 19000, odds: "19,000", color: [170, 110, 50] },
+  { id: "bagel", name: "bagel", oneIn: 24000, rarity: 24000, odds: "24,000", color: [190, 140, 70] },
+  { id: "taco", name: "taco", oneIn: 30000, rarity: 30000, odds: "30,000", color: [210, 150, 40] },
+  { id: "burger", name: "burger", oneIn: 38000, rarity: 38000, odds: "38,000", color: [140, 80, 40] },
+  { id: "fries", name: "fries", oneIn: 48000, rarity: 48000, odds: "48,000", color: [230, 180, 50] },
+  { id: "sushi", name: "sushi", oneIn: 60000, rarity: 60000, odds: "60,000", color: [220, 80, 70] },
+  { id: "rabbit", name: "rabbit", oneIn: 76000, rarity: 76000, odds: "76,000", color: [180, 170, 160] },
+  { id: "horse", name: "horse", oneIn: 96000, rarity: 96000, odds: "96,000", color: [140, 90, 50] },
+  { id: "cow", name: "cow", oneIn: 120000, rarity: 120000, odds: "120,000", color: [40, 40, 40] },
+  { id: "pig", name: "pig", oneIn: 150000, rarity: 150000, odds: "150,000", color: [230, 160, 160] },
+  { id: "sheep", name: "sheep", oneIn: 190000, rarity: 190000, odds: "190,000", color: [220, 220, 220] },
+  { id: "duck", name: "duck", oneIn: 240000, rarity: 240000, odds: "240,000", color: [40, 120, 70] },
+  { id: "penguin", name: "penguin", oneIn: 300000, rarity: 300000, odds: "300,000", color: [20, 20, 30] },
+  { id: "bear", name: "bear", oneIn: 380000, rarity: 380000, odds: "380,000", color: [110, 70, 40] },
+  { id: "wolf", name: "wolf", oneIn: 480000, rarity: 480000, odds: "480,000", color: [90, 90, 95] },
+  { id: "deer", name: "deer", oneIn: 600000, rarity: 600000, odds: "600,000", color: [140, 100, 60] },
+  { id: "turtle", name: "turtle", oneIn: 760000, rarity: 760000, odds: "760,000", color: [40, 120, 70] },
+  { id: "snake", name: "snake", oneIn: 960000, rarity: 960000, odds: "960,000", color: [50, 110, 50] },
+  { id: "parrot", name: "parrot", oneIn: 1200000, rarity: 1200000, odds: "1,200,000", color: [40, 160, 80] },
+  { id: "hamster", name: "hamster", oneIn: 1500000, rarity: 1500000, odds: "1,500,000", color: [190, 140, 80] },
+  { id: "otter", name: "otter", oneIn: 1900000, rarity: 1900000, odds: "1,900,000", color: [110, 80, 50] },
+  { id: "kermit", name: "kermit", oneIn: 2400000, rarity: 2400000, odds: "2,400,000", color: [60, 170, 60] },
+  { id: "elmo", name: "elmo", oneIn: 3000000, rarity: 3000000, odds: "3,000,000", color: [220, 40, 40] },
+  { id: "minion", name: "minion", oneIn: 3800000, rarity: 3800000, odds: "3,800,000", color: [230, 190, 30] },
+  { id: "sonic", name: "sonic", oneIn: 4800000, rarity: 4800000, odds: "4,800,000", color: [30, 90, 210] },
+  { id: "vader", name: "vader", oneIn: 6000000, rarity: 6000000, odds: "6,000,000", color: [20, 20, 25] },
+  { id: "homer", name: "homer", oneIn: 7600000, rarity: 7600000, odds: "7,600,000", color: [240, 200, 60] },
+  { id: "squidward", name: "squidward", oneIn: 9600000, rarity: 9600000, odds: "9,600,000", color: [120, 170, 140] },
+  { id: "patrick", name: "patrick", oneIn: 12000000, rarity: 12000000, odds: "12,000,000", color: [230, 140, 150] },
+  { id: "lighthouse", name: "lighthouse", oneIn: 15000000, rarity: 15000000, odds: "15,000,000", color: [230, 230, 230] },
+  { id: "shaggy", name: "shaggy", oneIn: 19000000, rarity: 19000000, odds: "19,000,000", color: [80, 140, 60] },
+  { id: "everest", name: "everest", oneIn: 24000000, rarity: 24000000, odds: "24,000,000", color: [200, 210, 220] },
+  { id: "fuji", name: "fuji", oneIn: 30000000, rarity: 30000000, odds: "30,000,000", color: [180, 190, 200] },
+  { id: "niagara", name: "niagara", oneIn: 38000000, rarity: 38000000, odds: "38,000,000", color: [80, 160, 200] },
+  { id: "sahara", name: "sahara", oneIn: 48000000, rarity: 48000000, odds: "48,000,000", color: [210, 170, 90] },
+  { id: "glacier", name: "glacier", oneIn: 60000000, rarity: 60000000, odds: "60,000,000", color: [180, 210, 220] },
+  { id: "geyser", name: "geyser", oneIn: 76000000, rarity: 76000000, odds: "76,000,000", color: [180, 200, 210] },
+  { id: "fjord", name: "fjord", oneIn: 96000000, rarity: 96000000, odds: "96,000,000", color: [70, 120, 150] },
+  { id: "canyon", name: "canyon", oneIn: 120000000, rarity: 120000000, odds: "120,000,000", color: [180, 90, 50] },
+  { id: "reef", name: "reef", oneIn: 150000000, rarity: 150000000, odds: "150,000,000", color: [40, 140, 160] },
+  { id: "iceberg", name: "iceberg", oneIn: 190000000, rarity: 190000000, odds: "190,000,000", color: [200, 220, 230] },
+  { id: "waterfall", name: "waterfall", oneIn: 19198, rarity: 19198, odds: "19,198", color: [80, 160, 200] },
+  { id: "volcano", name: "volcano", oneIn: 20936, rarity: 20936, odds: "20,936", color: [180, 60, 30] },
+  { id: "pyramid", name: "pyramid", oneIn: 22830, rarity: 22830, odds: "22,830", color: [210, 180, 120] },
+  { id: "castle", name: "castle", oneIn: 24897, rarity: 24897, odds: "24,897", color: [120, 120, 130] },
+  { id: "colosseum", name: "colosseum", oneIn: 27150, rarity: 27150, odds: "27,150", color: [180, 150, 110] },
+  { id: "rainforest", name: "rainforest", oneIn: 29607, rarity: 29607, odds: "29,607", color: [30, 120, 50] },
+  { id: "redwood", name: "redwood", oneIn: 32287, rarity: 32287, odds: "32,287", color: [90, 50, 30] },
+  { id: "baobab", name: "baobab", oneIn: 35209, rarity: 35209, odds: "35,209", color: [160, 120, 70] },
+  { id: "mangrove", name: "mangrove", oneIn: 38396, rarity: 38396, odds: "38,396", color: [40, 110, 80] },
+  { id: "sequoia", name: "sequoia", oneIn: 41871, rarity: 41871, odds: "41,871", color: [80, 50, 30] },
+  { id: "axolotl", name: "axolotl", oneIn: 45661, rarity: 45661, odds: "45,661", color: [220, 140, 160] },
+  { id: "pangolin", name: "pangolin", oneIn: 49793, rarity: 49793, odds: "49,793", color: [140, 100, 60] },
+  { id: "okapi", name: "okapi", oneIn: 54300, rarity: 54300, odds: "54,300", color: [120, 70, 40] },
+  { id: "narwhal", name: "narwhal", oneIn: 59215, rarity: 59215, odds: "59,215", color: [170, 190, 200] },
+  { id: "quokka", name: "quokka", oneIn: 64574, rarity: 64574, odds: "64,574", color: [140, 100, 60] },
+  { id: "platypus", name: "platypus", oneIn: 70419, rarity: 70419, odds: "70,419", color: [110, 80, 50] },
+  { id: "kakapo", name: "kakapo", oneIn: 76792, rarity: 76792, odds: "76,792", color: [70, 120, 60] },
+  { id: "chameleon", name: "chameleon", oneIn: 83742, rarity: 83742, odds: "83,742", color: [40, 140, 60] },
+  { id: "jaguar", name: "jaguar", oneIn: 91322, rarity: 91322, odds: "91,322", color: [180, 130, 50] },
+  { id: "leopard", name: "leopard", oneIn: 99587, rarity: 99587, odds: "99,587", color: [190, 150, 70] },
+  { id: "gorilla", name: "gorilla", oneIn: 108600, rarity: 108600, odds: "108,600", color: [50, 50, 50] },
+  { id: "elephant", name: "elephant", oneIn: 118429, rarity: 118429, odds: "118,429", color: [140, 140, 145] },
+  { id: "whale", name: "whale", oneIn: 129148, rarity: 129148, odds: "129,148", color: [40, 80, 120] },
+  { id: "dolphin", name: "dolphin", oneIn: 140837, rarity: 140837, odds: "140,837", color: [80, 150, 190] },
+  { id: "flamingo", name: "flamingo", oneIn: 153584, rarity: 153584, odds: "153,584", color: [230, 120, 150] },
+  { id: "magnetar", name: "magnetar", oneIn: 191980, rarity: 191980, odds: "191,980", color: [40, 40, 80] },
+  { id: "andromeda", name: "andromeda", oneIn: 209356, rarity: 209356, odds: "209,356", color: [80, 90, 160] },
+  { id: "milkyway", name: "milkyway", oneIn: 228304, rarity: 228304, odds: "228,304", color: [20, 20, 50] },
+  { id: "meteorite", name: "meteorite", oneIn: 248967, rarity: 248967, odds: "248,967", color: [80, 70, 65] },
+  { id: "fossil", name: "fossil", oneIn: 271501, rarity: 271501, odds: "271,501", color: [150, 130, 90] },
+  { id: "trilobite", name: "trilobite", oneIn: 296074, rarity: 296074, odds: "296,074", color: [120, 100, 70] },
+  { id: "ammonite", name: "ammonite", oneIn: 322871, rarity: 322871, odds: "322,871", color: [140, 120, 80] },
+  { id: "coelacanth", name: "coelacanth", oneIn: 352093, rarity: 352093, odds: "352,093", color: [60, 80, 100] },
+  { id: "komodo", name: "komodo", oneIn: 383960, rarity: 383960, odds: "383,960", color: [90, 100, 50] },
+  { id: "anaconda", name: "anaconda", oneIn: 418711, rarity: 418711, odds: "418,711", color: [40, 90, 40] },
+  { id: "condor", name: "condor", oneIn: 456608, rarity: 456608, odds: "456,608", color: [40, 40, 45] },
+  { id: "albatross", name: "albatross", oneIn: 497934, rarity: 497934, odds: "497,934", color: [200, 200, 205] },
+  { id: "peacock", name: "peacock", oneIn: 543001, rarity: 543001, odds: "543,001", color: [20, 120, 80] },
+  { id: "macaw", name: "macaw", oneIn: 592147, rarity: 592147, odds: "592,147", color: [220, 60, 40] },
+  { id: "petra", name: "petra", oneIn: 645741, rarity: 645741, odds: "645,741", color: [180, 90, 60] },
+  { id: "stonehenge", name: "stonehenge", oneIn: 704186, rarity: 704186, odds: "704,186", color: [140, 140, 130] },
+  { id: "easter island", name: "easter island", oneIn: 767920, rarity: 767920, odds: "767,920", color: [120, 110, 90] },
+  { id: "machu picchu", name: "machu picchu", oneIn: 837423, rarity: 837423, odds: "837,423", color: [80, 140, 70] },
+  { id: "taj mahal", name: "taj mahal", oneIn: 913216, rarity: 913216, odds: "913,216", color: [230, 230, 235] },
+  { id: "angkor", name: "angkor", oneIn: 995869, rarity: 995869, odds: "995,869", color: [160, 120, 70] },
+  { id: "hubble", name: "hubble", oneIn: 1086003, rarity: 1086003, odds: "1,086,003", color: [180, 180, 190] },
+  { id: "apollo", name: "apollo", oneIn: 1184294, rarity: 1184294, odds: "1,184,294", color: [200, 200, 205] },
+  { id: "observatory", name: "observatory", oneIn: 1291482, rarity: 1291482, odds: "1,291,482", color: [40, 50, 80] },
+  { id: "telescope", name: "telescope", oneIn: 1408371, rarity: 1408371, odds: "1,408,371", color: [160, 160, 170] },
+  { id: "blue whale", name: "blue whale", oneIn: 1535840, rarity: 1535840, odds: "1,535,840", color: [50, 90, 140] },
 ];
 RARITIES.forEach((rarity) => {
   if (rarity.rarity == null) rarity.rarity = 1 + (rarity.oneIn - 2) * 4;
@@ -401,14 +623,22 @@ const START_BOX = { x: INTRO_W / 2 - 46, y: STAGE_H - 36, w: 92, h: 26 };
 const ROLL_BOX = { x: GAME_W / 2 - 74, y: 196, w: 148, h: 34 };
 const DEX_BOX = { x: GAME_W / 2 - 74, y: 242, w: 148, h: 30 };
 const SHOP_BOX = { x: GAME_W / 2 - 74, y: 284, w: 148, h: 30 };
-const BUY_LUCK = { x: GAME_W / 2 - 220, y: 200, w: 140, h: 32 };
-const BUY_SPEED = { x: GAME_W / 2 + 80, y: 200, w: 140, h: 32 };
-const BACK_BOX = { x: GAME_W / 2 - 52, y: GAME_H - 54, w: 104, h: 28 };
-const POTION_COST = 750;
-const SPEED_COST = 1500;
-const MEGA_COST = 5000;
+const RESET_BOX = { x: 12, y: GAME_H - 34, w: 64, h: 22 };
+const BUY_LUCK = { x: GAME_W / 2 - 220, y: 148, w: 140, h: 28 };
+const BUY_SPEED = { x: GAME_W / 2 + 80, y: 148, w: 140, h: 28 };
+const BUY_MEGA = { x: GAME_W / 2 - 220, y: 244, w: 140, h: 28 };
+const BUY_CLOVER = { x: GAME_W / 2 + 80, y: 244, w: 140, h: 28 };
+const BUY_AUTO = { x: GAME_W / 2 - 70, y: 324, w: 140, h: 28 };
+const BACK_BOX = { x: GAME_W / 2 - 52, y: 368, w: 104, h: 28 };
+const POTION_COST = 375;
+const SPEED_COST = 450;
+const MEGA_COST = 12000;
+const CLOVER_COST = [1000, 2500, 10000];
+const CLOVER_LUCK = [1, 1.1, 1.25, 1.5];
+const CLOVER_NAME = ["4 leaf clover", "5 leaf clover", "6 leaf clover"];
+const CLOVER_NOTE = ["10% increase", "25% increase", "50% increase"];
+const AUTO_COST = 3000;
 const POTION_MS = 5 * 60 * 1000;
-const BUY_MEGA = { x: GAME_W / 2 - 70, y: 318, w: 140, h: 32 };
 
 const saveKey = "test-your-luck-bestiary";
 let rolls = 0;
@@ -417,6 +647,9 @@ let money = 0;
 let potionUntil = 0;
 let speedUntil = 0;
 let megaLeft = 0;
+let cloverTier = 0;
+let autoclickerOwned = false;
+let autoclickerOn = false;
 let rollPad = 0.06;
 let rollOver = 0.26;
 let rollBack = 0.42;
@@ -428,18 +661,7 @@ const STRIP_TILE = 188;
 let payoutShown = 0;
 let payoutUntil = 0;
 let shopOpen = false;
-try {
-  const saved = JSON.parse(localStorage.getItem(saveKey) || "{}");
-  rolls = saved.rolls || 0;
-  found = saved.found || {};
-  money = Math.max(0, saved.money || 0);
-  potionUntil = saved.potionUntil || 0;
-  speedUntil = saved.speedUntil || 0;
-  megaLeft = Math.max(0, saved.megaLeft || 0);
-} catch (error) {
-  rolls = 0;
-  found = {};
-}
+let resetTaps = 0;
 
 let mode = "intro";
 let introStart = 0;
@@ -471,8 +693,10 @@ let loudness = 0;
 let starImages = [];
 let pointer = { x: 0, y: 0, down: false };
 
-const combo = new Audio("audio/combo.mp3");
-const songs = ["audio/song1.mp3", "audio/song2.mp3", "audio/song3.mp3"].map((src) => new Audio(src));
+const combo = new Audio("../audio/combo.mp3");
+const tick = new Audio("../audio/tick.wav");
+tick.volume = 0.65;
+const songs = ["../audio/song1.mp3", "../audio/song2.mp3", "../audio/song3.mp3"].map((src) => new Audio(src));
 let songIndex = -1;
 let currentAudio = null;
 let audioCtx = null;
@@ -483,9 +707,75 @@ function css(color, alpha = 1) {
   return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
 }
 
-function store() {
-  localStorage.setItem(saveKey, JSON.stringify({ rolls, found, money, potionUntil, speedUntil, megaLeft }));
+function sealText(payload) {
+  let mix = 2166136261;
+  const text = payload + "test-your-luck-seal-v1";
+  for (let index = 0; index < text.length; index += 1) {
+    mix ^= text.charCodeAt(index);
+    mix = Math.imul(mix, 16777619);
+  }
+  return (mix >>> 0).toString(16).padStart(8, "0");
 }
+
+function progressBody() {
+  return JSON.stringify({
+    autoclickerOn,
+    autoclickerOwned,
+    cloverTier,
+    found,
+    megaLeft,
+    money,
+    potionUntil,
+    rolls,
+    speedUntil,
+  });
+}
+
+function applyProgress(saved) {
+  rolls = Math.max(0, saved.rolls || 0);
+  found = saved.found && typeof saved.found === "object" ? saved.found : {};
+  money = Math.max(0, saved.money || 0);
+  potionUntil = saved.potionUntil || 0;
+  speedUntil = saved.speedUntil || 0;
+  megaLeft = Math.max(0, saved.megaLeft || 0);
+  cloverTier = Math.min(3, Math.max(0, saved.cloverTier || 0));
+  autoclickerOwned = !!saved.autoclickerOwned;
+  autoclickerOn = !!saved.autoclickerOn && autoclickerOwned;
+}
+
+function store() {
+  const body = progressBody();
+  localStorage.setItem(saveKey, JSON.stringify({ body, seal: sealText(body) }));
+  localStorage.setItem(saveKey + "-lock", "1");
+}
+
+function load() {
+  const raw = localStorage.getItem(saveKey);
+  if (!raw) return;
+  let wrapped;
+  try {
+    wrapped = JSON.parse(raw);
+  } catch (error) {
+    return;
+  }
+  if (!wrapped || typeof wrapped !== "object") return;
+  if (typeof wrapped.body === "string") {
+    if (wrapped.seal !== sealText(wrapped.body)) return;
+    try {
+      const saved = JSON.parse(wrapped.body);
+      if (saved && typeof saved === "object") applyProgress(saved);
+    } catch (error) {
+      return;
+    }
+    localStorage.setItem(saveKey + "-lock", "1");
+    return;
+  }
+  if (localStorage.getItem(saveKey + "-lock")) return;
+  applyProgress(wrapped);
+  store();
+}
+
+load();
 
 function luckNow() {
   return Date.now() < potionUntil ? 2 : 1;
@@ -497,6 +787,9 @@ function speedNow() {
 
 const wheelWeights = RARITIES.map((rarity) => 1 / rarity.rarity);
 const wheelTotal = wheelWeights.reduce((sum, weight) => sum + weight, 0);
+RARITIES.forEach((rarity) => {
+  rarity.chance = `1 in ${Math.max(1, Math.round(wheelTotal * rarity.rarity)).toLocaleString("en-US")}`;
+});
 
 function spinWheel() {
   let mark = Math.random() * wheelTotal;
@@ -507,8 +800,39 @@ function spinWheel() {
   return RARITIES[RARITIES.length - 1];
 }
 
+function luckSpins(boost) {
+  const scaled = boost * CLOVER_LUCK[Math.min(3, Math.max(0, cloverTier))];
+  let spins = Math.floor(scaled);
+  if (Math.random() < scaled - spins) spins += 1;
+  return Math.max(1, spins);
+}
+
+function gamblerPace() {
+  if (rolls >= 10000) return 1.8;
+  if (rolls >= 4000) return 1.7;
+  if (rolls >= 2000) return 1.6;
+  if (rolls >= 1600) return 1.55;
+  if (rolls >= 800) return 1.5;
+  if (rolls >= 400) return 1.4;
+  if (rolls >= 200) return 1.3;
+  if (rolls >= 100) return 1.2;
+  return 1;
+}
+
+function gamblerName() {
+  if (rolls >= 10000) return "apex gambler +80%";
+  if (rolls >= 4000) return "turbo gambler +70%";
+  if (rolls >= 2000) return "hyper gambler +60%";
+  if (rolls >= 1600) return "max gambler +55%";
+  if (rolls >= 800) return "ultra gambler +50%";
+  if (rolls >= 400) return "rapid fire +40%";
+  if (rolls >= 200) return "spam clicker +30%";
+  if (rolls >= 100) return "speedy gambler +20%";
+  return "";
+}
+
 function pickRarity(boost = luckNow()) {
-  const spins = Math.max(1, boost);
+  const spins = luckSpins(boost);
   let best = spinWheel();
   for (let spin = 1; spin < spins; spin += 1) {
     const rolled = spinWheel();
@@ -544,6 +868,27 @@ function buyMega() {
   if (money < MEGA_COST) return;
   money -= MEGA_COST;
   megaLeft += 1;
+  store();
+}
+
+function buyClover() {
+  if (cloverTier >= 3) return;
+  const cost = CLOVER_COST[cloverTier];
+  if (money < cost) return;
+  money -= cost;
+  cloverTier += 1;
+  store();
+}
+
+function buyAutoclicker() {
+  if (!autoclickerOwned) {
+    if (money < AUTO_COST) return;
+    money -= AUTO_COST;
+    autoclickerOwned = true;
+    autoclickerOn = true;
+  } else {
+    autoclickerOn = !autoclickerOn;
+  }
   store();
 }
 
@@ -586,6 +931,11 @@ function level() {
   return Math.min(1, (sum / freq.length) / 150);
 }
 
+function playTick() {
+  try { tick.currentTime = 0; } catch (error) { /* not loaded yet */ }
+  tick.play().catch(() => {});
+}
+
 function playCombo() {
   resumeAudio();
   try { combo.currentTime = 0; } catch (error) { /* not loaded yet */ }
@@ -599,7 +949,7 @@ function playNextSong() {
   const audio = songs[next];
   resumeAudio();
   try { audio.currentTime = 0; } catch (error) { /* not loaded yet */ }
-  audio.volume = mode === "game" ? 0.3 : 1;
+  audio.volume = mode === "game" ? 0.12 : 0.4;
   audio.onended = playNextSong;
   currentAudio = audio;
   audio.play().then(() => {
@@ -617,7 +967,7 @@ function startPlaylist() {
 }
 
 function duckMusic() {
-  songs.forEach((audio) => { audio.volume = 0.3; });
+  songs.forEach((audio) => { audio.volume = 0.12; });
 }
 
 function loadStars() {
@@ -707,8 +1057,12 @@ function beginIntro() {
   playCombo();
 }
 
-function beginRoll() {
+function beginRoll(auto = false) {
   if (spinning || bestiaryOpen || shopOpen || mode !== "game" || performance.now() < rollReady) return;
+  if (auto) {
+    if (money < 3) return;
+    money -= 3;
+  }
   let boost = luckNow();
   if (megaLeft > 0) {
     megaLeft -= 1;
@@ -719,14 +1073,11 @@ function beginRoll() {
   nextMulti = 1;
   const result = pickRarity(boost);
   const count = 40;
-  rollItems = Array.from({ length: count - 1 }, () => pickRarity(boost));
+  rollItems = Array.from({ length: count - 2 }, () => pickRarity(boost));
   rollItems.push(result);
-  rollItems.push(pickRarity(boost));
   rollTimes = [];
-  const pace = speedNow();
-  rollOver = 0.26 / pace;
-  rollBack = 0.42 / pace;
-  rollPad = rollOver + rollBack;
+  const pace = speedNow() * 1.25 * gamblerPace();
+  rollPad = 0.06 / pace;
   let moment = 0.14 / pace;
   for (let index = 0; index < count; index += 1) {
     const along = index / (count - 1);
@@ -748,7 +1099,7 @@ function beginRoll() {
 function finishRoll() {
   spinning = false;
   rollReady = performance.now() + 500;
-  const result = rollItems[rollItems.length - 2];
+  const result = rollItems[rollItems.length - 1];
   lastResult = result;
   rolls += 1;
   money += result.rarity;
@@ -777,17 +1128,47 @@ function enterGame() {
   duckMusic();
 }
 
+function tapReset() {
+  resetTaps += 1;
+  if (resetTaps < 10) return;
+  money = 0;
+  rolls = 0;
+  found = {};
+  potionUntil = 0;
+  speedUntil = 0;
+  megaLeft = 0;
+  cloverTier = 0;
+  autoclickerOwned = false;
+  autoclickerOn = false;
+  nextMulti = 1;
+  spinning = false;
+  rollItems = [];
+  lastResult = null;
+  showItem = null;
+  payoutUntil = 0;
+  rollReady = 0;
+  landZoom = 1;
+  landZoomTarget = 1;
+  peaceReveal = 1;
+  particles = [];
+  resetTaps = 0;
+  store();
+}
+
 function buttonAt(x, y) {
   if (mode === "intro") return inBox(START_BOX, x, y) && introDone ? "start" : null;
   if (bestiaryOpen || shopOpen) {
     if (shopOpen && inBox(BUY_LUCK, x, y)) return "buy";
     if (shopOpen && inBox(BUY_SPEED, x, y)) return "buy-speed";
     if (shopOpen && inBox(BUY_MEGA, x, y)) return "buy-mega";
+    if (shopOpen && inBox(BUY_CLOVER, x, y)) return "buy-clover";
+    if (shopOpen && inBox(BUY_AUTO, x, y)) return "buy-auto";
     return inBox(BACK_BOX, x, y) ? "back" : null;
   }
   if (inBox(ROLL_BOX, x, y)) return "roll";
   if (inBox(DEX_BOX, x, y)) return "bestiary";
   if (inBox(SHOP_BOX, x, y)) return "shop";
+  if (inBox(RESET_BOX, x, y)) return "reset";
   return null;
 }
 
@@ -848,7 +1229,10 @@ function paintNamed(rarity, scale, alpha) {
   ctx.font = "46px Arial";
   ctx.fillText(rarity.name, 0, nameY);
   ctx.font = "22px Arial";
-  ctx.fillText(rarity.odds, 0, nameY + 44);
+  const oddsWidth = Math.max(ctx.measureText(rarity.odds).width, ctx.measureText(rarity.chance).width) * scale;
+  const oddsY = 118 + (nameY + 44) * scale;
+  const oddsOver = Math.abs(pointer.x - GAME_W / 2) <= oddsWidth / 2 + 6 && Math.abs(pointer.y - oddsY) <= 16 * scale;
+  ctx.fillText(oddsOver ? rarity.chance : rarity.odds, 0, nameY + 44);
   ctx.restore();
 }
 
@@ -985,7 +1369,15 @@ function stripPos(elapsed) {
 }
 
 function paintRoll() {
-  if (!rollItems.length) {
+  const elapsed = spinning ? (performance.now() - rollStarted) / 1000 : 0;
+  const scale = showZoom * (spinning ? 1 : landZoom);
+  const alpha = (spinning ? showAlpha : 255) / 255;
+  if (spinning && rollIndex < 0 && lastResult) {
+    paintNamed(lastResult, 1, Math.max(0, 1 - elapsed / 0.14));
+    return;
+  }
+  const shown = spinning && showItem ? showItem : lastResult;
+  if (!shown) {
     ctx.fillStyle = "#dcdcdc";
     ctx.font = "46px Arial";
     ctx.textAlign = "center";
@@ -993,44 +1385,16 @@ function paintRoll() {
     ctx.fillText("roll", GAME_W / 2, 136);
     return;
   }
-  const pos = spinning ? stripPos((performance.now() - rollStarted) / 1000) : rollItems.length - 2;
-  if (!stripCanvas) {
-    stripCanvas = document.createElement("canvas");
-    stripCanvas.width = GAME_W;
-    stripCanvas.height = 200;
+  if (shown.id === "la peace" && spinning) {
+    paintNamed(DIAMOND, scale, alpha);
+    return;
   }
-  const board = ctx;
-  const strip = stripCanvas.getContext("2d");
-  strip.setTransform(1, 0, 0, 1, 0, 0);
-  strip.clearRect(0, 0, GAME_W, 200);
-  ctx = strip;
-  rollItems.forEach((rarity, index) => {
-    const x = GAME_W / 2 + (index - pos) * STRIP_TILE;
-    if (x < -STRIP_TILE || x > GAME_W + STRIP_TILE) return;
-    const face = rarity.id === "la peace" && (spinning || peaceReveal < 0.55) ? DIAMOND : rarity;
-    ctx.save();
-    ctx.translate(x, 36);
-    paintPhoto(face, -52, 0, 104);
-    ctx.fillStyle = css(face.color);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "16px Arial";
-    ctx.fillText(face.name, 0, 124);
-    ctx.font = "12px Arial";
-    ctx.fillText(face.odds, 0, 146);
-    ctx.restore();
-  });
-  strip.globalCompositeOperation = "destination-in";
-  const fade = strip.createLinearGradient(0, 0, GAME_W, 0);
-  fade.addColorStop(0, "rgba(0,0,0,0)");
-  fade.addColorStop(0.18, "rgba(0,0,0,1)");
-  fade.addColorStop(0.82, "rgba(0,0,0,1)");
-  fade.addColorStop(1, "rgba(0,0,0,0)");
-  strip.fillStyle = fade;
-  strip.fillRect(0, 0, GAME_W, 200);
-  strip.globalCompositeOperation = "source-over";
-  ctx = board;
-  board.drawImage(stripCanvas, 0, 24);
+  if (shown.id === "la peace") {
+    paintNamed(DIAMOND, scale, alpha * (1 - peaceReveal));
+    paintNamed(shown, scale, alpha * peaceReveal);
+    return;
+  }
+  paintNamed(shown, scale, alpha);
 }
 
 function paintNamed(rarity, scale, alpha) {
@@ -1046,7 +1410,10 @@ function paintNamed(rarity, scale, alpha) {
   ctx.font = "46px Arial";
   ctx.fillText(rarity.name, 0, nameY);
   ctx.font = "22px Arial";
-  ctx.fillText(rarity.odds, 0, nameY + 44);
+  const oddsWidth = Math.max(ctx.measureText(rarity.odds).width, ctx.measureText(rarity.chance).width) * scale;
+  const oddsY = 118 + (nameY + 44) * scale;
+  const oddsOver = Math.abs(pointer.x - GAME_W / 2) <= oddsWidth / 2 + 6 && Math.abs(pointer.y - oddsY) <= 16 * scale;
+  ctx.fillText(oddsOver ? rarity.chance : rarity.odds, 0, nameY + 44);
   ctx.restore();
 }
 
@@ -1103,7 +1470,9 @@ function paintBestiary() {
     ctx.textAlign = "right";
     ctx.font = "14px Arial";
     ctx.fillStyle = "#d2d2d2";
-    ctx.fillText(rarity.odds, GAME_W - 88, y + 14);
+    const oddsWidth = Math.max(ctx.measureText(rarity.odds).width, ctx.measureText(rarity.chance).width);
+    const oddsOver = pointer.x >= GAME_W - 88 - oddsWidth && pointer.x <= GAME_W - 82 && Math.abs(pointer.y - (y + 14)) <= 12;
+    ctx.fillText(oddsOver ? rarity.chance : rarity.odds, GAME_W - 88, y + 14);
     ctx.textAlign = "left";
     ctx.font = "12px Arial";
     ctx.fillStyle = "#c8c8c8";
@@ -1125,33 +1494,54 @@ function paintShop() {
   ctx.fillText("shop", GAME_W / 2, 36);
   ctx.fillStyle = "#2de65f";
   ctx.font = "22px Arial";
-  ctx.fillText(moneyText(money), GAME_W / 2, 72);
+  ctx.fillText(moneyText(money), GAME_W / 2, 68);
   const luckX = GAME_W / 2 - 150;
   const speedX = GAME_W / 2 + 150;
   ctx.font = "22px Arial";
   ctx.fillStyle = "#ffc440";
-  ctx.fillText("2x luck", luckX, 118);
+  ctx.fillText("2x luck", luckX, 100);
   ctx.fillStyle = "#78d2ff";
-  ctx.fillText("2x speed", speedX, 118);
+  ctx.fillText("2x speed", speedX, 100);
   ctx.font = "16px Arial";
   ctx.fillStyle = "#dcdcdc";
-  ctx.fillText("5 min", luckX, 150);
-  ctx.fillText("5 min", speedX, 150);
+  ctx.fillText("5 min", luckX, 118);
+  ctx.fillText("5 min", speedX, 118);
   ctx.fillStyle = "#2de65f";
-  ctx.fillText("$750", luckX, 176);
+  ctx.fillText("$375", luckX, 134);
   ctx.fillStyle = "#78d2ff";
-  ctx.fillText("$1500", speedX, 176);
+  ctx.fillText("$450", speedX, 134);
   ctx.font = "22px Arial";
   ctx.fillStyle = "#ffc440";
-  ctx.fillText("100x luck", GAME_W / 2, 258);
+  ctx.fillText("100x luck", luckX, 196);
   ctx.font = "16px Arial";
   ctx.fillStyle = "#dcdcdc";
-  ctx.fillText("next roll", GAME_W / 2, 286);
+  ctx.fillText("next roll", luckX, 214);
   ctx.fillStyle = "#ffc440";
-  ctx.fillText("$5000", GAME_W / 2, 308);
+  ctx.fillText("$12,000", luckX, 230);
+  const owned = cloverTier >= 3;
+  const leaf = owned ? 2 : cloverTier;
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "#30b448";
+  ctx.fillText(CLOVER_NAME[leaf], speedX, 196);
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#dcdcdc";
+  ctx.fillText(CLOVER_NOTE[leaf], speedX, 214);
+  ctx.fillStyle = "#30b448";
+  ctx.fillText(owned ? "owned" : moneyText(CLOVER_COST[cloverTier]), speedX, 230);
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "#ff8c50";
+  ctx.fillText("autoclicker", GAME_W / 2, 292);
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#dcdcdc";
+  ctx.fillText("$3 a roll", GAME_W / 2, 310);
   roundButton(BUY_LUCK, "buy", heldName === "buy" || money < POTION_COST, "16px Arial");
   roundButton(BUY_SPEED, "buy", heldName === "buy-speed" || money < SPEED_COST, "16px Arial");
   roundButton(BUY_MEGA, "buy", heldName === "buy-mega" || money < MEGA_COST, "16px Arial");
+  const cloverHeld = owned || heldName === "buy-clover" || money < (owned ? 0 : CLOVER_COST[cloverTier]);
+  roundButton(BUY_CLOVER, owned ? "owned" : "buy", cloverHeld, "16px Arial");
+  const autoLabel = autoclickerOwned ? (autoclickerOn ? "on" : "off") : "buy";
+  const autoHeld = heldName === "buy-auto" || (!autoclickerOwned && money < AUTO_COST);
+  roundButton(BUY_AUTO, autoLabel, autoHeld, "16px Arial");
   roundButton(BACK_BOX, "back", heldName === "back", "14px Arial");
 }
 
@@ -1168,6 +1558,10 @@ function paintLuckTimer() {
     const stacked = (megaLeft ? 100 : luckNow()) * nextMulti;
     chips.push({ label: `${stacked}x next`, color: "#30dc60" });
   }
+  if (cloverTier > 0) chips.push({ label: `${CLOVER_NAME[cloverTier - 1]} ${CLOVER_NOTE[cloverTier - 1]}`, color: "#30b448" });
+  const gambler = gamblerName();
+  if (gambler) chips.push({ label: gambler, color: "#78d2ff" });
+  if (autoclickerOn) chips.push({ label: "auto", color: "#ff8c50" });
   ctx.font = "16px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -1209,6 +1603,7 @@ function paintGame() {
     roundButton(ROLL_BOX, rollLabel, heldName === "roll" || spinning || wait > 0, "16px Arial");
     roundButton(DEX_BOX, "bestiary", heldName === "bestiary", "14px Arial");
     roundButton(SHOP_BOX, "shop", heldName === "shop", "14px Arial");
+    roundButton(RESET_BOX, resetTaps === 0 ? "reset" : `${resetTaps}/10`, heldName === "reset", "12px Arial");
   } else if (bestiaryOpen) {
     paintBestiary();
   } else {
@@ -1256,16 +1651,16 @@ function frame(now) {
   } else {
     if (spinning && rollTimes.length) {
       const elapsed = (now - rollStarted) / 1000;
-      const pos = stripPos(elapsed);
-      const index = Math.max(0, Math.min(rollItems.length - 1, Math.floor(pos + 0.5)));
-      if (index !== rollIndex) {
-        rollIndex = index;
-        showItem = rollItems[index];
-        showZoom = 1.05;
-        showAlpha = 90;
+      while (rollIndex + 1 < rollItems.length && elapsed >= rollTimes[rollIndex + 1]) {
+        rollIndex += 1;
+        showItem = rollItems[rollIndex];
+        showZoom = 1.07;
+        showAlpha = 60;
+        playTick();
       }
-      if (elapsed >= rollTimes[rollTimes.length - 1] + rollOver + rollBack) finishRoll();
+      if (rollIndex >= rollItems.length - 1 && elapsed >= rollTimes[rollItems.length - 1] + rollPad) finishRoll();
     }
+    if (autoclickerOn && !spinning && !bestiaryOpen && !shopOpen && performance.now() >= rollReady + 1500 && money >= 3) beginRoll(true);
     showZoom += (1 - showZoom) * Math.min(1, dt * 26);
     showAlpha = Math.min(255, showAlpha + dt * 3000);
     landZoom += (landZoomTarget - landZoom) * Math.min(1, dt * 9);
@@ -1292,6 +1687,12 @@ function frame(now) {
   }
   requestAnimationFrame(frame);
 }
+
+canvas.addEventListener("pointermove", (event) => {
+  const pos = pointerPos(event);
+  pointer.x = pos.x;
+  pointer.y = pos.y;
+});
 
 canvas.addEventListener("pointerdown", (event) => {
   resumeAudio();
@@ -1320,9 +1721,12 @@ canvas.addEventListener("pointerup", (event) => {
       shopOpen = true;
       bestiaryOpen = false;
     }
+    if (name === "reset") tapReset();
     if (name === "buy") buyLuck();
     if (name === "buy-speed") buySpeed();
     if (name === "buy-mega") buyMega();
+    if (name === "buy-clover") buyClover();
+    if (name === "buy-auto") buyAutoclicker();
     if (name === "back") {
       bestiaryOpen = false;
       shopOpen = false;
@@ -1344,6 +1748,7 @@ loadStars();
 fitCanvas();
 window.addEventListener("resize", fitCanvas);
 requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>

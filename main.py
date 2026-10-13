@@ -11,11 +11,14 @@ import time
 from pathlib import Path
 
 import tkinter as tk
-from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageTk
+from PIL import Image, ImageDraw, ImageFont, ImageTk
 
 DOWNLOADS = Path(r"C:\Users\finle\Downloads")
-AUDIO_DIR = Path(__file__).resolve().with_name("web") / "audio"
+AUDIO_DIR = Path(__file__).resolve().with_name("audio")
+if not (AUDIO_DIR / "combo.mp3").exists():
+    AUDIO_DIR = Path(__file__).resolve().with_name("web") / "audio"
 COMBO = AUDIO_DIR / "combo.mp3"
+TICK = AUDIO_DIR / "tick.wav"
 if not COMBO.exists():
     COMBO = DOWNLOADS / "Combo Sound Effect.mp3"
 CACHE = Path(tempfile.gettempdir()) / "test-your-luck"
@@ -350,6 +353,220 @@ RARITIES = (
     {"id": "pillars", "name": "pillars", "one_in": 6698800000, "rarity": 6698800000, "odds": "6,698,800,000", "color": (140, 120, 160)},
     {"id": "cartwheel", "name": "cartwheel", "one_in": 8184700000, "rarity": 8184700000, "odds": "8,184,700,000", "color": (200, 180, 140)},
     {"id": "heat death", "name": "heat death", "one_in": 10000000000, "rarity": 10000000000, "odds": "10,000,000,000", "color": (80, 40, 50)},
+    {"id": "honey", "name": "honey", "one_in": 18, "rarity": 18, "odds": "18", "color": (212, 150, 40)},
+    {"id": "candle", "name": "candle", "one_in": 21, "rarity": 21, "odds": "21", "color": (255, 190, 80)},
+    {"id": "pillow", "name": "pillow", "one_in": 24, "rarity": 24, "odds": "24", "color": (230, 220, 210)},
+    {"id": "kettle", "name": "kettle", "one_in": 28, "rarity": 28, "odds": "28", "color": (180, 190, 200)},
+    {"id": "spoon", "name": "spoon", "one_in": 32, "rarity": 32, "odds": "32", "color": (200, 200, 205)},
+    {"id": "blanket", "name": "blanket", "one_in": 37, "rarity": 37, "odds": "37", "color": (180, 140, 120)},
+    {"id": "button", "name": "button", "one_in": 43, "rarity": 43, "odds": "43", "color": (220, 220, 230)},
+    {"id": "ladder", "name": "ladder", "one_in": 49, "rarity": 49, "odds": "49", "color": (170, 120, 70)},
+    {"id": "bucket", "name": "bucket", "one_in": 57, "rarity": 57, "odds": "57", "color": (160, 165, 170)},
+    {"id": "ribbon", "name": "ribbon", "one_in": 66, "rarity": 66, "odds": "66", "color": (200, 40, 50)},
+    {"id": "yarn", "name": "yarn", "one_in": 76, "rarity": 76, "odds": "76", "color": (200, 80, 90)},
+    {"id": "cookie", "name": "cookie", "one_in": 88, "rarity": 88, "odds": "88", "color": (190, 130, 70)},
+    {"id": "mitten", "name": "mitten", "one_in": 102, "rarity": 102, "odds": "102", "color": (180, 50, 60)},
+    {"id": "lantern", "name": "lantern", "one_in": 118, "rarity": 118, "odds": "118", "color": (255, 170, 60)},
+    {"id": "mug", "name": "mug", "one_in": 136, "rarity": 136, "odds": "136", "color": (210, 200, 190)},
+    {"id": "basket", "name": "basket", "one_in": 157, "rarity": 157, "odds": "157", "color": (170, 120, 60)},
+    {"id": "soap", "name": "soap", "one_in": 182, "rarity": 182, "odds": "182", "color": (230, 230, 220)},
+    {"id": "towel", "name": "towel", "one_in": 210, "rarity": 210, "odds": "210", "color": (200, 210, 220)},
+    {"id": "hammer", "name": "hammer", "one_in": 242, "rarity": 242, "odds": "242", "color": (140, 140, 145)},
+    {"id": "scarf", "name": "scarf", "one_in": 280, "rarity": 280, "odds": "280", "color": (180, 50, 70)},
+    {"id": "doge", "name": "doge", "one_in": 700, "rarity": 700, "odds": "700", "color": (210, 170, 90)},
+    {"id": "grumpy", "name": "grumpy", "one_in": 850, "rarity": 850, "odds": "850", "color": (80, 80, 90)},
+    {"id": "harambe", "name": "harambe", "one_in": 1032, "rarity": 1032, "odds": "1,032", "color": (60, 60, 60)},
+    {"id": "stonks", "name": "stonks", "one_in": 1253, "rarity": 1253, "odds": "1,253", "color": (40, 180, 80)},
+    {"id": "nyan", "name": "nyan", "one_in": 1522, "rarity": 1522, "odds": "1,522", "color": (255, 120, 180)},
+    {"id": "coffin dance", "name": "coffin dance", "one_in": 1848, "rarity": 1848, "odds": "1,848", "color": (40, 40, 50)},
+    {"id": "skibidi", "name": "skibidi", "one_in": 2244, "rarity": 2244, "odds": "2,244", "color": (230, 230, 235)},
+    {"id": "sigma", "name": "sigma", "one_in": 2725, "rarity": 2725, "odds": "2,725", "color": (90, 100, 120)},
+    {"id": "ohio", "name": "ohio", "one_in": 3309, "rarity": 3309, "odds": "3,309", "color": (180, 30, 40)},
+    {"id": "gigachad", "name": "gigachad", "one_in": 4018, "rarity": 4018, "odds": "4,018", "color": (180, 180, 190)},
+    {"id": "npc", "name": "npc", "one_in": 4879, "rarity": 4879, "odds": "4,879", "color": (210, 190, 170)},
+    {"id": "copium", "name": "copium", "one_in": 5924, "rarity": 5924, "odds": "5,924", "color": (80, 160, 200)},
+    {"id": "rizz", "name": "rizz", "one_in": 7193, "rarity": 7193, "odds": "7,193", "color": (200, 30, 50)},
+    {"id": "cheems", "name": "cheems", "one_in": 8735, "rarity": 8735, "odds": "8,735", "color": (190, 160, 110)},
+    {"id": "bonk", "name": "bonk", "one_in": 10606, "rarity": 10606, "odds": "10,606", "color": (160, 110, 60)},
+    {"id": "yeet", "name": "yeet", "one_in": 12879, "rarity": 12879, "odds": "12,879", "color": (70, 140, 220)},
+    {"id": "bussin", "name": "bussin", "one_in": 15639, "rarity": 15639, "odds": "15,639", "color": (200, 120, 50)},
+    {"id": "monke", "name": "monke", "one_in": 18990, "rarity": 18990, "odds": "18,990", "color": (140, 100, 60)},
+    {"id": "bingus", "name": "bingus", "one_in": 23059, "rarity": 23059, "odds": "23,059", "color": (200, 170, 150)},
+    {"id": "sus", "name": "sus", "one_in": 28000, "rarity": 28000, "odds": "28,000", "color": (220, 40, 40)},
+    {"id": "mario", "name": "mario", "one_in": 50000, "rarity": 50000, "odds": "50,000", "color": (220, 30, 40)},
+    {"id": "pikachu", "name": "pikachu", "one_in": 58215, "rarity": 58215, "odds": "58,215", "color": (240, 200, 40)},
+    {"id": "lightsaber", "name": "lightsaber", "one_in": 67780, "rarity": 67780, "odds": "67,780", "color": (80, 220, 255)},
+    {"id": "grogu", "name": "grogu", "one_in": 78917, "rarity": 78917, "odds": "78,917", "color": (120, 160, 90)},
+    {"id": "shrek", "name": "shrek", "one_in": 91884, "rarity": 91884, "odds": "91,884", "color": (90, 160, 50)},
+    {"id": "spongebob", "name": "spongebob", "one_in": 106981, "rarity": 106981, "odds": "106,981", "color": (240, 210, 60)},
+    {"id": "barbie", "name": "barbie", "one_in": 124558, "rarity": 124558, "odds": "124,558", "color": (230, 80, 140)},
+    {"id": "goku", "name": "goku", "one_in": 145024, "rarity": 145024, "odds": "145,024", "color": (240, 140, 30)},
+    {"id": "naruto", "name": "naruto", "one_in": 168852, "rarity": 168852, "odds": "168,852", "color": (240, 140, 40)},
+    {"id": "luffy", "name": "luffy", "one_in": 196595, "rarity": 196595, "odds": "196,595", "color": (220, 50, 40)},
+    {"id": "gauntlet", "name": "gauntlet", "one_in": 228897, "rarity": 228897, "odds": "228,897", "color": (190, 150, 50)},
+    {"id": "joker", "name": "joker", "one_in": 266506, "rarity": 266506, "odds": "266,506", "color": (80, 160, 60)},
+    {"id": "elsa", "name": "elsa", "one_in": 310294, "rarity": 310294, "odds": "310,294", "color": (140, 200, 240)},
+    {"id": "kirby", "name": "kirby", "one_in": 361277, "rarity": 361277, "odds": "361,277", "color": (240, 140, 180)},
+    {"id": "yoda", "name": "yoda", "one_in": 420637, "rarity": 420637, "odds": "420,637", "color": (120, 150, 80)},
+    {"id": "heisenberg", "name": "heisenberg", "one_in": 489750, "rarity": 489750, "odds": "489,750", "color": (40, 50, 40)},
+    {"id": "squid game", "name": "squid game", "one_in": 570219, "rarity": 570219, "odds": "570,219", "color": (220, 40, 80)},
+    {"id": "matrix", "name": "matrix", "one_in": 663909, "rarity": 663909, "odds": "663,909", "color": (40, 220, 70)},
+    {"id": "tron", "name": "tron", "one_in": 772993, "rarity": 772993, "odds": "772,993", "color": (40, 180, 255)},
+    {"id": "totoro", "name": "totoro", "one_in": 900000, "rarity": 900000, "odds": "900,000", "color": (140, 140, 150)},
+    {"id": "tardigrade", "name": "tardigrade", "one_in": 1500000, "rarity": 1500000, "odds": "1,500,000", "color": (180, 140, 100)},
+    {"id": "stromatolite", "name": "stromatolite", "one_in": 1770476, "rarity": 1770476, "odds": "1,770,476", "color": (140, 120, 90)},
+    {"id": "quasicrystal", "name": "quasicrystal", "one_in": 2089723, "rarity": 2089723, "odds": "2,089,723", "color": (180, 190, 210)},
+    {"id": "tokamak", "name": "tokamak", "one_in": 2466537, "rarity": 2466537, "odds": "2,466,537", "color": (80, 140, 200)},
+    {"id": "mobius", "name": "mobius", "one_in": 2911296, "rarity": 2911296, "odds": "2,911,296", "color": (200, 200, 210)},
+    {"id": "klein bottle", "name": "klein bottle", "one_in": 3436253, "rarity": 3436253, "odds": "3,436,253", "color": (180, 200, 220)},
+    {"id": "mandelbrot", "name": "mandelbrot", "one_in": 4055869, "rarity": 4055869, "odds": "4,055,869", "color": (20, 20, 80)},
+    {"id": "cenote", "name": "cenote", "one_in": 4787213, "rarity": 4787213, "odds": "4,787,213", "color": (40, 160, 170)},
+    {"id": "inselberg", "name": "inselberg", "one_in": 5650430, "rarity": 5650430, "odds": "5,650,430", "color": (170, 130, 90)},
+    {"id": "yardang", "name": "yardang", "one_in": 6669300, "rarity": 6669300, "odds": "6,669,300", "color": (190, 160, 110)},
+    {"id": "penitentes", "name": "penitentes", "one_in": 7871890, "rarity": 7871890, "odds": "7,871,890", "color": (200, 220, 230)},
+    {"id": "sastrugi", "name": "sastrugi", "one_in": 9291329, "rarity": 9291329, "odds": "9,291,329", "color": (210, 220, 230)},
+    {"id": "frost flower", "name": "frost flower", "one_in": 10966716, "rarity": 10966716, "odds": "10,966,716", "color": (220, 230, 240)},
+    {"id": "brocken", "name": "brocken", "one_in": 12944205, "rarity": 12944205, "odds": "12,944,205", "color": (160, 160, 170)},
+    {"id": "moonbow", "name": "moonbow", "one_in": 15278269, "rarity": 15278269, "odds": "15,278,269", "color": (180, 180, 210)},
+    {"id": "parhelion", "name": "parhelion", "one_in": 18033205, "rarity": 18033205, "odds": "18,033,205", "color": (230, 200, 140)},
+    {"id": "asperitas", "name": "asperitas", "one_in": 21284905, "rarity": 21284905, "odds": "21,284,905", "color": (90, 100, 120)},
+    {"id": "noctilucent", "name": "noctilucent", "one_in": 25122942, "rarity": 25122942, "odds": "25,122,942", "color": (80, 140, 200)},
+    {"id": "haboob", "name": "haboob", "one_in": 29653043, "rarity": 29653043, "odds": "29,653,043", "color": (180, 140, 80)},
+    {"id": "supercell", "name": "supercell", "one_in": 35000000, "rarity": 35000000, "odds": "35,000,000", "color": (70, 80, 110)},
+    {"id": "finally", "name": "finally", "one_in": 100000000000, "rarity": 100000000000, "odds": "100,000,000,000", "color": (255, 230, 160)},
+    {"id": "aftermath", "name": "aftermath", "one_in": 1000000000000, "rarity": 1000000000000, "odds": "1,000,000,000,000", "color": (90, 90, 95)},
+    {"id": "ending", "name": "ending", "one_in": 1000000000000000000, "rarity": 1000000000000000000, "odds": "1,000,000,000,000,000,000", "color": (20, 10, 30)},
+    {"id": "regan", "name": "regan", "one_in": 2500, "rarity": 2500, "odds": "2,500", "color": (120, 100, 70)},
+    {"id": "pencil", "name": "pencil", "one_in": 36, "rarity": 36, "odds": "36", "color": (240, 200, 40)},
+    {"id": "pen", "name": "pen", "one_in": 44, "rarity": 44, "odds": "44", "color": (30, 70, 160)},
+    {"id": "eraser", "name": "eraser", "one_in": 52, "rarity": 52, "odds": "52", "color": (230, 140, 160)},
+    {"id": "notebook", "name": "notebook", "one_in": 68, "rarity": 68, "odds": "68", "color": (40, 90, 160)},
+    {"id": "ruler", "name": "ruler", "one_in": 84, "rarity": 84, "odds": "84", "color": (210, 180, 80)},
+    {"id": "crayon", "name": "crayon", "one_in": 108, "rarity": 108, "odds": "108", "color": (220, 60, 50)},
+    {"id": "marker", "name": "marker", "one_in": 132, "rarity": 132, "odds": "132", "color": (20, 20, 20)},
+    {"id": "stapler", "name": "stapler", "one_in": 168, "rarity": 168, "odds": "168", "color": (40, 40, 45)},
+    {"id": "scissors", "name": "scissors", "one_in": 210, "rarity": 210, "odds": "210", "color": (170, 175, 180)},
+    {"id": "glue", "name": "glue", "one_in": 260, "rarity": 260, "odds": "260", "color": (230, 230, 220)},
+    {"id": "fork", "name": "fork", "one_in": 24, "rarity": 24, "odds": "24", "color": (190, 190, 195)},
+    {"id": "plate", "name": "plate", "one_in": 30, "rarity": 30, "odds": "30", "color": (230, 230, 225)},
+    {"id": "bowl", "name": "bowl", "one_in": 38, "rarity": 38, "odds": "38", "color": (210, 200, 185)},
+    {"id": "cup", "name": "cup", "one_in": 48, "rarity": 48, "odds": "48", "color": (230, 230, 230)},
+    {"id": "straw", "name": "straw", "one_in": 60, "rarity": 60, "odds": "60", "color": (220, 180, 60)},
+    {"id": "napkin", "name": "napkin", "one_in": 76, "rarity": 76, "odds": "76", "color": (235, 230, 220)},
+    {"id": "sponge", "name": "sponge", "one_in": 96, "rarity": 96, "odds": "96", "color": (220, 190, 50)},
+    {"id": "toothbrush", "name": "toothbrush", "one_in": 120, "rarity": 120, "odds": "120", "color": (80, 160, 220)},
+    {"id": "toothpaste", "name": "toothpaste", "one_in": 150, "rarity": 150, "odds": "150", "color": (40, 140, 200)},
+    {"id": "comb", "name": "comb", "one_in": 190, "rarity": 190, "odds": "190", "color": (40, 40, 45)},
+    {"id": "brush", "name": "brush", "one_in": 240, "rarity": 240, "odds": "240", "color": (160, 90, 50)},
+    {"id": "mirror", "name": "mirror", "one_in": 300, "rarity": 300, "odds": "300", "color": (180, 190, 200)},
+    {"id": "clock", "name": "clock", "one_in": 380, "rarity": 380, "odds": "380", "color": (40, 40, 50)},
+    {"id": "lamp", "name": "lamp", "one_in": 480, "rarity": 480, "odds": "480", "color": (230, 190, 80)},
+    {"id": "chair", "name": "chair", "one_in": 600, "rarity": 600, "odds": "600", "color": (140, 90, 50)},
+    {"id": "table", "name": "table", "one_in": 760, "rarity": 760, "odds": "760", "color": (150, 100, 55)},
+    {"id": "door", "name": "door", "one_in": 960, "rarity": 960, "odds": "960", "color": (120, 75, 40)},
+    {"id": "window", "name": "window", "one_in": 1200, "rarity": 1200, "odds": "1,200", "color": (160, 190, 210)},
+    {"id": "shoe", "name": "shoe", "one_in": 1500, "rarity": 1500, "odds": "1,500", "color": (40, 40, 50)},
+    {"id": "sock", "name": "sock", "one_in": 1900, "rarity": 1900, "odds": "1,900", "color": (180, 180, 190)},
+    {"id": "banana", "name": "banana", "one_in": 2400, "rarity": 2400, "odds": "2,400", "color": (240, 200, 40)},
+    {"id": "bread", "name": "bread", "one_in": 3000, "rarity": 3000, "odds": "3,000", "color": (190, 140, 70)},
+    {"id": "sandwich", "name": "sandwich", "one_in": 3800, "rarity": 3800, "odds": "3,800", "color": (200, 160, 80)},
+    {"id": "cheese", "name": "cheese", "one_in": 4800, "rarity": 4800, "odds": "4,800", "color": (240, 190, 40)},
+    {"id": "egg", "name": "egg", "one_in": 6000, "rarity": 6000, "odds": "6,000", "color": (235, 225, 200)},
+    {"id": "milk", "name": "milk", "one_in": 7600, "rarity": 7600, "odds": "7,600", "color": (240, 240, 240)},
+    {"id": "cereal", "name": "cereal", "one_in": 9600, "rarity": 9600, "odds": "9,600", "color": (200, 150, 60)},
+    {"id": "waffle", "name": "waffle", "one_in": 12000, "rarity": 12000, "odds": "12,000", "color": (190, 130, 50)},
+    {"id": "pancake", "name": "pancake", "one_in": 15000, "rarity": 15000, "odds": "15,000", "color": (210, 160, 70)},
+    {"id": "pretzel", "name": "pretzel", "one_in": 19000, "rarity": 19000, "odds": "19,000", "color": (170, 110, 50)},
+    {"id": "bagel", "name": "bagel", "one_in": 24000, "rarity": 24000, "odds": "24,000", "color": (190, 140, 70)},
+    {"id": "taco", "name": "taco", "one_in": 30000, "rarity": 30000, "odds": "30,000", "color": (210, 150, 40)},
+    {"id": "burger", "name": "burger", "one_in": 38000, "rarity": 38000, "odds": "38,000", "color": (140, 80, 40)},
+    {"id": "fries", "name": "fries", "one_in": 48000, "rarity": 48000, "odds": "48,000", "color": (230, 180, 50)},
+    {"id": "sushi", "name": "sushi", "one_in": 60000, "rarity": 60000, "odds": "60,000", "color": (220, 80, 70)},
+    {"id": "rabbit", "name": "rabbit", "one_in": 76000, "rarity": 76000, "odds": "76,000", "color": (180, 170, 160)},
+    {"id": "horse", "name": "horse", "one_in": 96000, "rarity": 96000, "odds": "96,000", "color": (140, 90, 50)},
+    {"id": "cow", "name": "cow", "one_in": 120000, "rarity": 120000, "odds": "120,000", "color": (40, 40, 40)},
+    {"id": "pig", "name": "pig", "one_in": 150000, "rarity": 150000, "odds": "150,000", "color": (230, 160, 160)},
+    {"id": "sheep", "name": "sheep", "one_in": 190000, "rarity": 190000, "odds": "190,000", "color": (220, 220, 220)},
+    {"id": "duck", "name": "duck", "one_in": 240000, "rarity": 240000, "odds": "240,000", "color": (40, 120, 70)},
+    {"id": "penguin", "name": "penguin", "one_in": 300000, "rarity": 300000, "odds": "300,000", "color": (20, 20, 30)},
+    {"id": "bear", "name": "bear", "one_in": 380000, "rarity": 380000, "odds": "380,000", "color": (110, 70, 40)},
+    {"id": "wolf", "name": "wolf", "one_in": 480000, "rarity": 480000, "odds": "480,000", "color": (90, 90, 95)},
+    {"id": "deer", "name": "deer", "one_in": 600000, "rarity": 600000, "odds": "600,000", "color": (140, 100, 60)},
+    {"id": "turtle", "name": "turtle", "one_in": 760000, "rarity": 760000, "odds": "760,000", "color": (40, 120, 70)},
+    {"id": "snake", "name": "snake", "one_in": 960000, "rarity": 960000, "odds": "960,000", "color": (50, 110, 50)},
+    {"id": "parrot", "name": "parrot", "one_in": 1200000, "rarity": 1200000, "odds": "1,200,000", "color": (40, 160, 80)},
+    {"id": "hamster", "name": "hamster", "one_in": 1500000, "rarity": 1500000, "odds": "1,500,000", "color": (190, 140, 80)},
+    {"id": "otter", "name": "otter", "one_in": 1900000, "rarity": 1900000, "odds": "1,900,000", "color": (110, 80, 50)},
+    {"id": "kermit", "name": "kermit", "one_in": 2400000, "rarity": 2400000, "odds": "2,400,000", "color": (60, 170, 60)},
+    {"id": "elmo", "name": "elmo", "one_in": 3000000, "rarity": 3000000, "odds": "3,000,000", "color": (220, 40, 40)},
+    {"id": "minion", "name": "minion", "one_in": 3800000, "rarity": 3800000, "odds": "3,800,000", "color": (230, 190, 30)},
+    {"id": "sonic", "name": "sonic", "one_in": 4800000, "rarity": 4800000, "odds": "4,800,000", "color": (30, 90, 210)},
+    {"id": "vader", "name": "vader", "one_in": 6000000, "rarity": 6000000, "odds": "6,000,000", "color": (20, 20, 25)},
+    {"id": "homer", "name": "homer", "one_in": 7600000, "rarity": 7600000, "odds": "7,600,000", "color": (240, 200, 60)},
+    {"id": "squidward", "name": "squidward", "one_in": 9600000, "rarity": 9600000, "odds": "9,600,000", "color": (120, 170, 140)},
+    {"id": "patrick", "name": "patrick", "one_in": 12000000, "rarity": 12000000, "odds": "12,000,000", "color": (230, 140, 150)},
+    {"id": "lighthouse", "name": "lighthouse", "one_in": 15000000, "rarity": 15000000, "odds": "15,000,000", "color": (230, 230, 230)},
+    {"id": "shaggy", "name": "shaggy", "one_in": 19000000, "rarity": 19000000, "odds": "19,000,000", "color": (80, 140, 60)},
+    {"id": "everest", "name": "everest", "one_in": 24000000, "rarity": 24000000, "odds": "24,000,000", "color": (200, 210, 220)},
+    {"id": "fuji", "name": "fuji", "one_in": 30000000, "rarity": 30000000, "odds": "30,000,000", "color": (180, 190, 200)},
+    {"id": "niagara", "name": "niagara", "one_in": 38000000, "rarity": 38000000, "odds": "38,000,000", "color": (80, 160, 200)},
+    {"id": "sahara", "name": "sahara", "one_in": 48000000, "rarity": 48000000, "odds": "48,000,000", "color": (210, 170, 90)},
+    {"id": "glacier", "name": "glacier", "one_in": 60000000, "rarity": 60000000, "odds": "60,000,000", "color": (180, 210, 220)},
+    {"id": "geyser", "name": "geyser", "one_in": 76000000, "rarity": 76000000, "odds": "76,000,000", "color": (180, 200, 210)},
+    {"id": "fjord", "name": "fjord", "one_in": 96000000, "rarity": 96000000, "odds": "96,000,000", "color": (70, 120, 150)},
+    {"id": "canyon", "name": "canyon", "one_in": 120000000, "rarity": 120000000, "odds": "120,000,000", "color": (180, 90, 50)},
+    {"id": "reef", "name": "reef", "one_in": 150000000, "rarity": 150000000, "odds": "150,000,000", "color": (40, 140, 160)},
+    {"id": "iceberg", "name": "iceberg", "one_in": 190000000, "rarity": 190000000, "odds": "190,000,000", "color": (200, 220, 230)},
+    {"id": "waterfall", "name": "waterfall", "one_in": 19198, "rarity": 19198, "odds": "19,198", "color": (80, 160, 200)},
+    {"id": "volcano", "name": "volcano", "one_in": 20936, "rarity": 20936, "odds": "20,936", "color": (180, 60, 30)},
+    {"id": "pyramid", "name": "pyramid", "one_in": 22830, "rarity": 22830, "odds": "22,830", "color": (210, 180, 120)},
+    {"id": "castle", "name": "castle", "one_in": 24897, "rarity": 24897, "odds": "24,897", "color": (120, 120, 130)},
+    {"id": "colosseum", "name": "colosseum", "one_in": 27150, "rarity": 27150, "odds": "27,150", "color": (180, 150, 110)},
+    {"id": "rainforest", "name": "rainforest", "one_in": 29607, "rarity": 29607, "odds": "29,607", "color": (30, 120, 50)},
+    {"id": "redwood", "name": "redwood", "one_in": 32287, "rarity": 32287, "odds": "32,287", "color": (90, 50, 30)},
+    {"id": "baobab", "name": "baobab", "one_in": 35209, "rarity": 35209, "odds": "35,209", "color": (160, 120, 70)},
+    {"id": "mangrove", "name": "mangrove", "one_in": 38396, "rarity": 38396, "odds": "38,396", "color": (40, 110, 80)},
+    {"id": "sequoia", "name": "sequoia", "one_in": 41871, "rarity": 41871, "odds": "41,871", "color": (80, 50, 30)},
+    {"id": "axolotl", "name": "axolotl", "one_in": 45661, "rarity": 45661, "odds": "45,661", "color": (220, 140, 160)},
+    {"id": "pangolin", "name": "pangolin", "one_in": 49793, "rarity": 49793, "odds": "49,793", "color": (140, 100, 60)},
+    {"id": "okapi", "name": "okapi", "one_in": 54300, "rarity": 54300, "odds": "54,300", "color": (120, 70, 40)},
+    {"id": "narwhal", "name": "narwhal", "one_in": 59215, "rarity": 59215, "odds": "59,215", "color": (170, 190, 200)},
+    {"id": "quokka", "name": "quokka", "one_in": 64574, "rarity": 64574, "odds": "64,574", "color": (140, 100, 60)},
+    {"id": "platypus", "name": "platypus", "one_in": 70419, "rarity": 70419, "odds": "70,419", "color": (110, 80, 50)},
+    {"id": "kakapo", "name": "kakapo", "one_in": 76792, "rarity": 76792, "odds": "76,792", "color": (70, 120, 60)},
+    {"id": "chameleon", "name": "chameleon", "one_in": 83742, "rarity": 83742, "odds": "83,742", "color": (40, 140, 60)},
+    {"id": "jaguar", "name": "jaguar", "one_in": 91322, "rarity": 91322, "odds": "91,322", "color": (180, 130, 50)},
+    {"id": "leopard", "name": "leopard", "one_in": 99587, "rarity": 99587, "odds": "99,587", "color": (190, 150, 70)},
+    {"id": "gorilla", "name": "gorilla", "one_in": 108600, "rarity": 108600, "odds": "108,600", "color": (50, 50, 50)},
+    {"id": "elephant", "name": "elephant", "one_in": 118429, "rarity": 118429, "odds": "118,429", "color": (140, 140, 145)},
+    {"id": "whale", "name": "whale", "one_in": 129148, "rarity": 129148, "odds": "129,148", "color": (40, 80, 120)},
+    {"id": "dolphin", "name": "dolphin", "one_in": 140837, "rarity": 140837, "odds": "140,837", "color": (80, 150, 190)},
+    {"id": "flamingo", "name": "flamingo", "one_in": 153584, "rarity": 153584, "odds": "153,584", "color": (230, 120, 150)},
+    {"id": "magnetar", "name": "magnetar", "one_in": 191980, "rarity": 191980, "odds": "191,980", "color": (40, 40, 80)},
+    {"id": "andromeda", "name": "andromeda", "one_in": 209356, "rarity": 209356, "odds": "209,356", "color": (80, 90, 160)},
+    {"id": "milkyway", "name": "milkyway", "one_in": 228304, "rarity": 228304, "odds": "228,304", "color": (20, 20, 50)},
+    {"id": "meteorite", "name": "meteorite", "one_in": 248967, "rarity": 248967, "odds": "248,967", "color": (80, 70, 65)},
+    {"id": "fossil", "name": "fossil", "one_in": 271501, "rarity": 271501, "odds": "271,501", "color": (150, 130, 90)},
+    {"id": "trilobite", "name": "trilobite", "one_in": 296074, "rarity": 296074, "odds": "296,074", "color": (120, 100, 70)},
+    {"id": "ammonite", "name": "ammonite", "one_in": 322871, "rarity": 322871, "odds": "322,871", "color": (140, 120, 80)},
+    {"id": "coelacanth", "name": "coelacanth", "one_in": 352093, "rarity": 352093, "odds": "352,093", "color": (60, 80, 100)},
+    {"id": "komodo", "name": "komodo", "one_in": 383960, "rarity": 383960, "odds": "383,960", "color": (90, 100, 50)},
+    {"id": "anaconda", "name": "anaconda", "one_in": 418711, "rarity": 418711, "odds": "418,711", "color": (40, 90, 40)},
+    {"id": "condor", "name": "condor", "one_in": 456608, "rarity": 456608, "odds": "456,608", "color": (40, 40, 45)},
+    {"id": "albatross", "name": "albatross", "one_in": 497934, "rarity": 497934, "odds": "497,934", "color": (200, 200, 205)},
+    {"id": "peacock", "name": "peacock", "one_in": 543001, "rarity": 543001, "odds": "543,001", "color": (20, 120, 80)},
+    {"id": "macaw", "name": "macaw", "one_in": 592147, "rarity": 592147, "odds": "592,147", "color": (220, 60, 40)},
+    {"id": "petra", "name": "petra", "one_in": 645741, "rarity": 645741, "odds": "645,741", "color": (180, 90, 60)},
+    {"id": "stonehenge", "name": "stonehenge", "one_in": 704186, "rarity": 704186, "odds": "704,186", "color": (140, 140, 130)},
+    {"id": "easter island", "name": "easter island", "one_in": 767920, "rarity": 767920, "odds": "767,920", "color": (120, 110, 90)},
+    {"id": "machu picchu", "name": "machu picchu", "one_in": 837423, "rarity": 837423, "odds": "837,423", "color": (80, 140, 70)},
+    {"id": "taj mahal", "name": "taj mahal", "one_in": 913216, "rarity": 913216, "odds": "913,216", "color": (230, 230, 235)},
+    {"id": "angkor", "name": "angkor", "one_in": 995869, "rarity": 995869, "odds": "995,869", "color": (160, 120, 70)},
+    {"id": "hubble", "name": "hubble", "one_in": 1086003, "rarity": 1086003, "odds": "1,086,003", "color": (180, 180, 190)},
+    {"id": "apollo", "name": "apollo", "one_in": 1184294, "rarity": 1184294, "odds": "1,184,294", "color": (200, 200, 205)},
+    {"id": "observatory", "name": "observatory", "one_in": 1291482, "rarity": 1291482, "odds": "1,291,482", "color": (40, 50, 80)},
+    {"id": "telescope", "name": "telescope", "one_in": 1408371, "rarity": 1408371, "odds": "1,408,371", "color": (160, 160, 170)},
+    {"id": "blue whale", "name": "blue whale", "one_in": 1535840, "rarity": 1535840, "odds": "1,535,840", "color": (50, 90, 140)},
 )
 for rarity in RARITIES:
     number = rarity.get("rarity", 1 + (rarity["one_in"] - 2) * 4)
@@ -417,6 +634,8 @@ held_start = False
 held_name: str | None = None
 bestiary_open = False
 bestiary_scroll = 0
+pointer_x = -1.0
+pointer_y = -1.0
 spinning = False
 roll_items: list[dict] = []
 roll_times: list[float] = []
@@ -440,6 +659,9 @@ money = 0
 potion_until = 0.0
 speed_until = 0.0
 mega_left = 0
+clover_tier = 0
+autoclicker_owned = False
+autoclicker_on = False
 roll_pad = 0.06
 roll_over = 0.26
 roll_back = 0.42
@@ -450,17 +672,26 @@ STRIP_TILE = 188
 payout_shown = 0
 payout_until = 0.0
 shop_open = False
-POTION_COST = 750
-SPEED_COST = 1500
-MEGA_COST = 5000
+reset_taps = 0
+POTION_COST = 375
+SPEED_COST = 450
+MEGA_COST = 12000
+CLOVER_COST = (1000, 2500, 10000)
+CLOVER_LUCK = (1.0, 1.10, 1.25, 1.50)
+CLOVER_NAME = ("4 leaf clover", "5 leaf clover", "6 leaf clover")
+CLOVER_NOTE = ("10% increase", "25% increase", "50% increase")
+AUTO_COST = 3000
 POTION_SECONDS = 300
 ROLL_BOX = (GAME_W // 2 - 74, 196, 148, 34)
 DEX_BOX = (GAME_W // 2 - 74, 242, 148, 30)
 SHOP_BOX = (GAME_W // 2 - 74, 284, 148, 30)
-BUY_LUCK_BOX = (GAME_W // 2 - 220, 200, 140, 32)
-BUY_SPEED_BOX = (GAME_W // 2 + 80, 200, 140, 32)
-BUY_MEGA_BOX = (GAME_W // 2 - 70, 318, 140, 32)
-BACK_BOX = (GAME_W // 2 - 52, GAME_H - 54, 104, 28)
+RESET_BOX = (12, GAME_H - 34, 64, 22)
+BUY_LUCK_BOX = (GAME_W // 2 - 220, 148, 140, 28)
+BUY_SPEED_BOX = (GAME_W // 2 + 80, 148, 140, 28)
+BUY_MEGA_BOX = (GAME_W // 2 - 220, 244, 140, 28)
+BUY_CLOVER_BOX = (GAME_W // 2 + 80, 244, 140, 28)
+BUY_AUTO_BOX = (GAME_W // 2 - 70, 324, 140, 28)
+BACK_BOX = (GAME_W // 2 - 52, 368, 104, 28)
 
 
 def mci_cmd(command: str) -> int:
@@ -510,7 +741,18 @@ def stripped(path: Path) -> Path:
         if start < len(data) - 1000 and data[start] == 0xFF:
             data = data[start:]
     CACHE.mkdir(parents=True, exist_ok=True)
-    dest = CACHE / ("".join(ch if ch.isalnum() else "_" for ch in path.stem) + ".mp3")
+    stem = "".join(ch if ch.isalnum() else "_" for ch in path.stem)
+    dest = CACHE / f"{stem}.mp3"
+    quiet = CACHE / f"{stem}_q40.mp3"
+    if FFMPEG:
+        fresh = quiet.exists() and quiet.stat().st_size > 1000 and quiet.stat().st_mtime >= path.stat().st_mtime
+        if not fresh:
+            subprocess.run(
+                [FFMPEG, "-y", "-v", "error", "-i", str(path), "-filter:a", "volume=0.4", "-c:a", "libmp3lame", "-q:a", "4", str(quiet)],
+                capture_output=True,
+            )
+        if quiet.exists() and quiet.stat().st_size > 1000:
+            return quiet
     if not dest.exists() or dest.stat().st_size != len(data):
         dest.write_bytes(data)
     return dest
@@ -729,6 +971,8 @@ def speed_now() -> int:
 
 WHEEL = tuple(1 / rarity["rarity"] for rarity in RARITIES)
 WHEEL_TOTAL = sum(WHEEL)
+for rarity in RARITIES:
+    rarity["chance"] = f"1 in {max(1, round(WHEEL_TOTAL * rarity['rarity'])):,}"
 
 
 def spin_wheel() -> dict:
@@ -740,47 +984,165 @@ def spin_wheel() -> dict:
     return RARITIES[-1]
 
 
+def luck_spins(boost: float) -> int:
+    scaled = float(boost) * CLOVER_LUCK[min(3, max(0, clover_tier))]
+    spins = int(scaled)
+    if random.random() < scaled - spins:
+        spins += 1
+    return max(1, spins)
+
+
+def gambler_pace() -> float:
+    if roll_count >= 10000:
+        return 1.80
+    if roll_count >= 4000:
+        return 1.70
+    if roll_count >= 2000:
+        return 1.60
+    if roll_count >= 1600:
+        return 1.55
+    if roll_count >= 800:
+        return 1.50
+    if roll_count >= 400:
+        return 1.40
+    if roll_count >= 200:
+        return 1.30
+    if roll_count >= 100:
+        return 1.20
+    return 1.0
+
+
+def gambler_name() -> str | None:
+    if roll_count >= 10000:
+        return "apex gambler +80%"
+    if roll_count >= 4000:
+        return "turbo gambler +70%"
+    if roll_count >= 2000:
+        return "hyper gambler +60%"
+    if roll_count >= 1600:
+        return "max gambler +55%"
+    if roll_count >= 800:
+        return "ultra gambler +50%"
+    if roll_count >= 400:
+        return "rapid fire +40%"
+    if roll_count >= 200:
+        return "spam clicker +30%"
+    if roll_count >= 100:
+        return "speedy gambler +20%"
+    return None
+
+
 def pick_rarity(boost: int | None = None) -> dict:
     if boost is None:
         boost = luck_now()
     best = spin_wheel()
-    for _ in range(max(1, boost) - 1):
+    for _ in range(luck_spins(boost) - 1):
         rolled = spin_wheel()
         if rolled["rarity"] > best["rarity"]:
             best = rolled
     return best
 
 
+def progress_body() -> dict:
+    return {
+        "autoclicker_on": autoclicker_on,
+        "autoclicker_owned": autoclicker_owned,
+        "clover_tier": clover_tier,
+        "found": found,
+        "mega_left": mega_left,
+        "money": money,
+        "potion_until": potion_until,
+        "rolls": roll_count,
+        "speed_until": speed_until,
+    }
+
+
+def seal_text(payload: str) -> str:
+    mix = 2166136261
+    for char in payload + "test-your-luck-seal-v1":
+        mix ^= ord(char)
+        mix = (mix * 16777619) & 0xFFFFFFFF
+    return f"{mix:08x}"
+
+
+def apply_progress(data: dict) -> None:
+    global roll_count, found, money, potion_until, speed_until, mega_left, clover_tier, autoclicker_owned, autoclicker_on
+    roll_count = max(0, int(data.get("rolls", 0)))
+    money = max(0, int(data.get("money", 0)))
+    potion_until = float(data.get("potion_until", 0))
+    speed_until = float(data.get("speed_until", 0))
+    mega_left = max(0, int(data.get("mega_left", 0)))
+    clover_tier = min(3, max(0, int(data.get("clover_tier", 0))))
+    autoclicker_owned = bool(data.get("autoclicker_owned", False))
+    autoclicker_on = bool(data.get("autoclicker_on", False)) and autoclicker_owned
+    loaded = data.get("found", {})
+    found = loaded if isinstance(loaded, dict) else {}
+
+
 def load_progress() -> None:
-    global roll_count, found, money, potion_until, speed_until, mega_left
     if not SAVE.exists():
         return
     try:
         data = json.loads(SAVE.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return
-    roll_count = int(data.get("rolls", 0))
-    money = max(0, int(data.get("money", 0)))
-    potion_until = float(data.get("potion_until", 0))
-    speed_until = float(data.get("speed_until", 0))
-    mega_left = max(0, int(data.get("mega_left", 0)))
-    loaded = data.get("found", {})
-    if isinstance(loaded, dict):
-        found = loaded
+    if not isinstance(data, dict):
+        return
+    if "body" in data:
+        body = data.get("body")
+        if not isinstance(body, str) or data.get("seal") != seal_text(body):
+            return
+        try:
+            saved = json.loads(body)
+        except json.JSONDecodeError:
+            return
+        if isinstance(saved, dict):
+            apply_progress(saved)
+        return
+    if SAVE.with_name("bestiary.lock").exists():
+        return
+    apply_progress(data)
+    store_progress()
 
 
 def store_progress() -> None:
+    body = json.dumps(progress_body(), ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     SAVE.write_text(
-        json.dumps({
-            "rolls": roll_count,
-            "found": found,
-            "money": money,
-            "potion_until": potion_until,
-            "speed_until": speed_until,
-            "mega_left": mega_left,
-        }),
+        json.dumps({"body": body, "seal": seal_text(body)}),
         encoding="utf-8",
     )
+    SAVE.with_name("bestiary.lock").write_text("1", encoding="utf-8")
+
+
+def tap_reset() -> None:
+    global reset_taps, money, roll_count, found, potion_until, speed_until, mega_left
+    global clover_tier, autoclicker_owned, autoclicker_on, next_multi, spinning, pending_result
+    global last_result, show_item, payout_until, roll_ready, land_zoom, land_zoom_target, peace_reveal
+    reset_taps += 1
+    if reset_taps < 10:
+        return
+    money = 0
+    roll_count = 0
+    found = {}
+    potion_until = 0
+    speed_until = 0
+    mega_left = 0
+    clover_tier = 0
+    autoclicker_owned = False
+    autoclicker_on = False
+    next_multi = 1
+    spinning = False
+    pending_result = None
+    last_result = None
+    show_item = None
+    payout_until = 0
+    roll_ready = 0
+    land_zoom = 1
+    land_zoom_target = 1
+    peace_reveal = 1
+    particles.clear()
+    reset_taps = 0
+    store_progress()
 
 
 def money_text(amount: int) -> str:
@@ -816,6 +1178,31 @@ def buy_mega() -> None:
         return
     money -= MEGA_COST
     mega_left += 1
+    store_progress()
+
+
+def buy_clover() -> None:
+    global money, clover_tier
+    if clover_tier >= 3:
+        return
+    cost = CLOVER_COST[clover_tier]
+    if money < cost:
+        return
+    money -= cost
+    clover_tier += 1
+    store_progress()
+
+
+def buy_autoclicker() -> None:
+    global money, autoclicker_owned, autoclicker_on
+    if not autoclicker_owned:
+        if money < AUTO_COST:
+            return
+        money -= AUTO_COST
+        autoclicker_owned = True
+        autoclicker_on = True
+    else:
+        autoclicker_on = not autoclicker_on
     store_progress()
 
 
@@ -896,7 +1283,12 @@ def load_stars() -> None:
 
 def duck_music() -> None:
     if playing_alias == "track":
-        mci_cmd("setaudio track volume to 300")
+        mci_cmd(f"setaudio track volume to {120 if mode == 'game' else 400}")
+
+
+def play_tick() -> None:
+    mci_cmd("stop tick")
+    mci_cmd("play tick from 0")
 
 
 def enter_game() -> None:
@@ -913,12 +1305,16 @@ def enter_game() -> None:
         start_playlist()
 
 
-def begin_roll() -> None:
+def begin_roll(auto: bool = False) -> None:
     global spinning, pending_result, roll_items, roll_times, roll_started, roll_i
     global show_zoom, show_alpha, land_zoom, land_zoom_target, peace_reveal, roll_pad, mega_left
-    global next_multi, roll_over, roll_back
+    global next_multi, money
     if spinning or bestiary_open or shop_open or time.perf_counter() < roll_ready:
         return
+    if auto:
+        if money < 3:
+            return
+        money -= 3
     boost = luck_now()
     if mega_left > 0:
         mega_left -= 1
@@ -928,21 +1324,19 @@ def begin_roll() -> None:
     next_multi = 1
     pending_result = pick_rarity(boost)
     count = 40
-    roll_items = [pick_rarity(boost) for _ in range(count - 1)]
+    roll_items = [pick_rarity(boost) for _ in range(count - 2)]
     roll_items.append(pending_result)
-    roll_items.append(pick_rarity(boost))
     roll_times = []
-    pace = speed_now()
+    pace = speed_now() * 1.25 * gambler_pace()
     moment = 0.14 / pace
-    roll_over = 0.26 / pace
-    roll_back = 0.42 / pace
-    roll_pad = roll_over + roll_back
+    roll_pad = 0.06 / pace
     for index in range(count):
         along = index / (count - 1)
         moment += (0.022 + (0.5 - 0.022) * (along ** 2.8)) / pace
         roll_times.append(moment)
     roll_started = time.perf_counter()
     roll_i = -1
+    show_item = None
     show_zoom = 1.0
     show_alpha = 255
     land_zoom = 1.0
@@ -1050,15 +1444,17 @@ def tick_spin() -> None:
     now = time.perf_counter()
     if spinning and roll_times:
         elapsed = now - roll_started
-        pos = strip_pos(elapsed)
-        index = max(0, min(len(roll_items) - 1, math.floor(pos + 0.5)))
-        if index != roll_i:
-            roll_i = index
-            show_item = roll_items[index]
-            show_zoom = 1.05
-            show_alpha = 90
-        if elapsed >= roll_times[-1] + roll_over + roll_back:
+        while roll_i + 1 < len(roll_items) and elapsed >= roll_times[roll_i + 1]:
+            roll_i += 1
+            show_item = roll_items[roll_i]
+            show_zoom = 1.07
+            show_alpha = 60
+            play_tick()
+        if roll_i >= len(roll_items) - 1 and elapsed >= roll_times[len(roll_items) - 1] + roll_pad:
             finish_roll()
+    if autoclicker_on and not spinning and not bestiary_open and not shop_open and mode == "game":
+        if now >= roll_ready + 1.5 and money >= 3:
+            begin_roll(True)
     show_zoom += (1.0 - show_zoom) * 0.42
     show_alpha = min(255, show_alpha + 48)
     land_zoom += (land_zoom_target - land_zoom) * 0.14
@@ -1097,6 +1493,10 @@ def game_button_at(x: int, y: int) -> str | None:
             return "buy-speed"
         if shop_open and point_in(BUY_MEGA_BOX, x, y):
             return "buy-mega"
+        if shop_open and point_in(BUY_CLOVER_BOX, x, y):
+            return "buy-clover"
+        if shop_open and point_in(BUY_AUTO_BOX, x, y):
+            return "buy-auto"
         return "back" if point_in(BACK_BOX, x, y) else None
     if point_in(ROLL_BOX, x, y):
         return "roll"
@@ -1104,6 +1504,8 @@ def game_button_at(x: int, y: int) -> str | None:
         return "bestiary"
     if point_in(SHOP_BOX, x, y):
         return "shop"
+    if point_in(RESET_BOX, x, y):
+        return "reset"
     return None
 
 
@@ -1161,6 +1563,27 @@ def diamond_face() -> dict:
     return next(rarity for rarity in RARITIES if rarity["id"] == "diamond")
 
 
+def text_span(text: str, font: ImageFont.FreeTypeFont, scale: float = 1.0) -> tuple[float, float]:
+    box = font.getbbox(text)
+    return (box[2] - box[0] + 8) * scale, (box[3] - box[1] + 8) * scale
+
+
+def hovering_center(cx: float, cy: float, rarity: dict, font: ImageFont.FreeTypeFont, scale: float = 1.0) -> bool:
+    width = max(text_span(rarity["odds"], font, scale)[0], text_span(rarity["chance"], font, scale)[0])
+    height = max(text_span(rarity["odds"], font, scale)[1], text_span(rarity["chance"], font, scale)[1])
+    return abs(pointer_x - cx) <= width / 2 and abs(pointer_y - cy) <= height / 2
+
+
+def hovering_right(right: float, cy: float, rarity: dict, font: ImageFont.FreeTypeFont) -> bool:
+    width = max(text_span(rarity["odds"], font)[0], text_span(rarity["chance"], font)[0])
+    height = max(text_span(rarity["odds"], font)[1], text_span(rarity["chance"], font)[1])
+    return right - width <= pointer_x <= right + 6 and abs(pointer_y - cy) <= height / 2
+
+
+def shown_odds(rarity: dict, hovered: bool) -> str:
+    return rarity["chance"] if hovered else rarity["odds"]
+
+
 def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int) -> None:
     name_y = 118
     picture = photos.get(rarity["id"])
@@ -1173,72 +1596,31 @@ def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int) -> N
         frame.paste(shot, (int(GAME_W / 2 - size / 2), int(58 - size / 2)), shot)
         name_y = 132
     paint_line(frame, rarity["name"], FONT_46, rarity["color"], GAME_W / 2, name_y, scale, alpha)
-    paint_line(frame, rarity["odds"], FONT_22, rarity["color"], GAME_W / 2, name_y + 44, scale, alpha)
-
-
-def strip_pos(elapsed: float) -> float:
-    target = max(0, len(roll_items) - 2)
-    if not roll_times:
-        return float(target)
-    last = roll_times[-1]
-    if elapsed < last:
-        t = max(0.0, elapsed / last)
-        return target * (1 - (1 - t) ** 2.6)
-    if elapsed < last + roll_over:
-        t = (elapsed - last) / (roll_over or 1)
-        t = 1 - (1 - t) ** 2
-        return target + 0.88 * t
-    if elapsed < last + roll_over + roll_back:
-        t = (elapsed - last - roll_over) / (roll_back or 1)
-        t = t * t * (3 - 2 * t)
-        return target + 0.88 * (1 - t)
-    return float(target)
-
-
-def strip_fade() -> Image.Image:
-    cached = getattr(strip_fade, "mask", None)
-    if cached is not None:
-        return cached
-    fade = 150
-    row = []
-    for x in range(GAME_W):
-        if x < fade:
-            row.append(int(255 * (x + 1) / fade))
-        elif x >= GAME_W - fade:
-            row.append(max(0, int(255 * (GAME_W - x) / fade)))
-        else:
-            row.append(255)
-    line = Image.new("L", (GAME_W, 1))
-    line.putdata(row)
-    strip_fade.mask = line.resize((GAME_W, 200))
-    return strip_fade.mask
+    odds_y = name_y + 44
+    label = shown_odds(rarity, hovering_center(GAME_W / 2, odds_y, rarity, FONT_22, scale))
+    paint_line(frame, label, FONT_22, rarity["color"], GAME_W / 2, odds_y, scale, alpha)
 
 
 def paint_roll(frame: Image.Image) -> None:
-    if not roll_items:
+    elapsed = time.perf_counter() - roll_started if spinning else 0
+    scale = show_zoom * (1.0 if spinning else land_zoom)
+    if spinning and roll_i < 0 and last_result is not None:
+        fade = max(0, int(255 * (1 - elapsed / 0.14)))
+        paint_named(frame, last_result, 1, fade)
+        return
+    shown = show_item if spinning and show_item is not None else last_result
+    if shown is None:
         paint_line(frame, "roll", FONT_46, (220, 220, 220), GAME_W / 2, 136, 1, 255)
         return
-    if spinning:
-        pos = strip_pos(time.perf_counter() - roll_started)
-    else:
-        pos = float(len(roll_items) - 2)
-    band_h = 200
-    band = Image.new("RGBA", (GAME_W, band_h), (0, 0, 0, 0))
-    for index, rarity in enumerate(roll_items):
-        x = GAME_W / 2 + (index - pos) * STRIP_TILE
-        if x < -STRIP_TILE or x > GAME_W + STRIP_TILE:
-            continue
-        face = diamond_face() if rarity["id"] == "la peace" and (spinning or peace_reveal < 0.55) else rarity
-        tile = Image.new("RGBA", (STRIP_TILE - 12, band_h), (0, 0, 0, 0))
-        picture = photos.get(face["id"])
-        if picture is not None:
-            shot = picture.resize((104, 104), Image.Resampling.BILINEAR)
-            tile.paste(shot, ((tile.width - 104) // 2, 8), shot)
-        paint_line(tile, face["name"], FONT_16, face["color"], tile.width / 2, 132, 1, 255)
-        paint_line(tile, face["odds"], FONT_12, face["color"], tile.width / 2, 156, 1, 255)
-        band.paste(tile, (int(x - tile.width / 2), 0), tile)
-    band.putalpha(ImageChops.multiply(band.getchannel("A"), strip_fade()))
-    frame.paste(band, (0, 24), band)
+    alpha = show_alpha if spinning else 255
+    if shown["id"] == "la peace" and spinning:
+        paint_named(frame, diamond_face(), scale, alpha)
+        return
+    if shown["id"] == "la peace":
+        paint_named(frame, diamond_face(), scale, int(alpha * (1 - peace_reveal)))
+        paint_named(frame, shown, scale, int(alpha * peace_reveal))
+        return
+    paint_named(frame, shown, scale, alpha)
 
 
 def paint_bestiary(frame: Image.Image) -> None:
@@ -1266,7 +1648,9 @@ def paint_bestiary(frame: Image.Image) -> None:
             small = thumb.resize((34, 34), Image.Resampling.BILINEAR)
             sheet.paste(small, (40, y + 7), small)
         sheet_pen.text((88, y + 14), rarity["name"], font=FONT_16, fill=(*color, 255), anchor="lm")
-        sheet_pen.text((GAME_W - 88, y + 14), rarity["odds"], font=FONT_14, fill=(210, 210, 210, 255), anchor="rm")
+        screen_y = view_top + y + 14 - bestiary_scroll
+        label = shown_odds(rarity, hovering_right(GAME_W - 88, screen_y, rarity, FONT_14))
+        sheet_pen.text((GAME_W - 88, y + 14), label, font=FONT_14, fill=(210, 210, 210, 255), anchor="rm")
         sheet_pen.text((88, y + 34), f"earliest roll {slot['first']}", font=FONT_12, fill=(200, 200, 200, 255), anchor="lm")
         sheet_pen.text((GAME_W - 88, y + 34), f"got {slot['count']}", font=FONT_12, fill=(200, 200, 200, 255), anchor="rm")
     shown = sheet.crop((0, bestiary_scroll, GAME_W, bestiary_scroll + view_h))
@@ -1279,21 +1663,37 @@ def paint_shop(frame: Image.Image) -> None:
     frame.alpha_composite(veil)
     pen = ImageDraw.Draw(frame)
     pen.text((GAME_W / 2, 36), "shop", font=FONT_28, fill=(255, 255, 255, 255), anchor="mm")
-    pen.text((GAME_W / 2, 72), money_text(money), font=FONT_22, fill=(45, 230, 95, 255), anchor="mm")
+    pen.text((GAME_W / 2, 68), money_text(money), font=FONT_22, fill=(45, 230, 95, 255), anchor="mm")
     luck_x = GAME_W // 2 - 150
     speed_x = GAME_W // 2 + 150
-    pen.text((luck_x, 118), "2x luck", font=FONT_22, fill=(255, 196, 64, 255), anchor="mm")
-    pen.text((speed_x, 118), "2x speed", font=FONT_22, fill=(120, 210, 255, 255), anchor="mm")
-    pen.text((luck_x, 150), "5 min", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
-    pen.text((speed_x, 150), "5 min", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
-    pen.text((luck_x, 176), "$750", font=FONT_16, fill=(45, 230, 95, 255), anchor="mm")
-    pen.text((speed_x, 176), "$1500", font=FONT_16, fill=(120, 210, 255, 255), anchor="mm")
-    pen.text((GAME_W / 2, 258), "100x luck", font=FONT_22, fill=(255, 196, 64, 255), anchor="mm")
-    pen.text((GAME_W / 2, 286), "next roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
-    pen.text((GAME_W / 2, 308), "$5000", font=FONT_16, fill=(255, 196, 64, 255), anchor="mm")
+    pen.text((luck_x, 100), "2x luck", font=FONT_22, fill=(255, 196, 64, 255), anchor="mm")
+    pen.text((speed_x, 100), "2x speed", font=FONT_22, fill=(120, 210, 255, 255), anchor="mm")
+    pen.text((luck_x, 118), "5 min", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((speed_x, 118), "5 min", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((luck_x, 134), "$375", font=FONT_16, fill=(45, 230, 95, 255), anchor="mm")
+    pen.text((speed_x, 134), "$450", font=FONT_16, fill=(120, 210, 255, 255), anchor="mm")
+    pen.text((luck_x, 196), "100x luck", font=FONT_22, fill=(255, 196, 64, 255), anchor="mm")
+    pen.text((luck_x, 214), "next roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((luck_x, 230), "$12,000", font=FONT_16, fill=(255, 196, 64, 255), anchor="mm")
+    owned = clover_tier >= 3
+    leaf = 2 if owned else clover_tier
+    pen.text((speed_x, 196), CLOVER_NAME[leaf], font=FONT_22, fill=(48, 180, 72, 255), anchor="mm")
+    pen.text((speed_x, 214), CLOVER_NOTE[leaf], font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((speed_x, 230), "owned" if owned else money_text(CLOVER_COST[clover_tier]), font=FONT_16, fill=(48, 180, 72, 255), anchor="mm")
+    pen.text((GAME_W / 2, 292), "autoclicker", font=FONT_22, fill=(255, 140, 80, 255), anchor="mm")
+    pen.text((GAME_W / 2, 310), "$3 a roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
     paint_ui_button(frame, BUY_LUCK_BOX, "buy", held_name == "buy" or money < POTION_COST, FONT_16)
     paint_ui_button(frame, BUY_SPEED_BOX, "buy", held_name == "buy-speed" or money < SPEED_COST, FONT_16)
     paint_ui_button(frame, BUY_MEGA_BOX, "buy", held_name == "buy-mega" or money < MEGA_COST, FONT_16)
+    clover_held = owned or held_name == "buy-clover" or money < (0 if owned else CLOVER_COST[clover_tier])
+    paint_ui_button(frame, BUY_CLOVER_BOX, "owned" if owned else "buy", clover_held, FONT_16)
+    if autoclicker_owned:
+        auto_label = "on" if autoclicker_on else "off"
+        auto_held = held_name == "buy-auto"
+    else:
+        auto_label = "buy"
+        auto_held = held_name == "buy-auto" or money < AUTO_COST
+    paint_ui_button(frame, BUY_AUTO_BOX, auto_label, auto_held, FONT_16)
     paint_ui_button(frame, BACK_BOX, "back", held_name == "back", FONT_14)
 
 
@@ -1313,6 +1713,13 @@ def paint_luck_timer(frame: Image.Image) -> None:
     if next_multi > 1:
         stacked = (100 if mega_left else luck_now()) * next_multi
         chips.append((f"{stacked}x next", (48, 220, 96, 255)))
+    if clover_tier > 0:
+        chips.append((f"{CLOVER_NAME[clover_tier - 1]} {CLOVER_NOTE[clover_tier - 1]}", (48, 180, 72, 255)))
+    title = gambler_name()
+    if title:
+        chips.append((title, (120, 210, 255, 255)))
+    if autoclicker_on:
+        chips.append(("auto", (255, 140, 80, 255)))
     pen = ImageDraw.Draw(frame)
     height = 26
     for index, (label, color) in enumerate(chips):
@@ -1341,6 +1748,8 @@ def compose_game(env: dict | None, pos: float | None) -> Image.Image:
         paint_ui_button(frame, ROLL_BOX, label, roll_held, FONT_16)
         paint_ui_button(frame, DEX_BOX, "bestiary", held_name == "bestiary", FONT_14)
         paint_ui_button(frame, SHOP_BOX, "shop", held_name == "shop", FONT_14)
+        reset_label = "reset" if reset_taps == 0 else f"{reset_taps}/10"
+        paint_ui_button(frame, RESET_BOX, reset_label, held_name == "reset", FONT_12)
     if bestiary_open:
         paint_bestiary(frame)
     if shop_open:
@@ -1394,8 +1803,7 @@ def next_track() -> None:
     mci_cmd("play track")
     playing_alias = "track"
     playing_path = path
-    if mode == "game":
-        duck_music()
+    duck_music()
     root.after(400, watch_track)
 
 
@@ -1441,12 +1849,18 @@ def on_release(event: tk.Event) -> None:
         elif chosen == "shop":
             shop_open = True
             bestiary_open = False
+        elif chosen == "reset":
+            tap_reset()
         elif chosen == "buy":
             buy_luck()
         elif chosen == "buy-speed":
             buy_speed()
         elif chosen == "buy-mega":
             buy_mega()
+        elif chosen == "buy-clover":
+            buy_clover()
+        elif chosen == "buy-auto":
+            buy_autoclicker()
         elif chosen == "back":
             bestiary_open = False
             shop_open = False
@@ -1455,6 +1869,7 @@ def on_release(event: tk.Event) -> None:
 
 def close() -> None:
     mci_cmd("close hit")
+    mci_cmd("close tick")
     mci_cmd("close track")
     root.destroy()
 
@@ -1464,6 +1879,8 @@ def preload() -> None:
     paths.extend(song_list())
     for path in paths:
         try:
+            if path != COMBO:
+                stripped(path)
             load_envelope(path)
         except Exception:
             pass
@@ -1477,16 +1894,27 @@ if COMBO.exists():
     mci_cmd(f'open "{COMBO}" type mpegvideo alias hit')
     mci_cmd("set hit time format milliseconds")
 
+if TICK.exists():
+    mci_cmd("close tick")
+    mci_cmd(f'open "{TICK}" type waveaudio alias tick')
+
 load_progress()
 load_photos()
 load_stars()
 threading.Thread(target=preload, daemon=True).start()
+def on_motion(event: tk.Event) -> None:
+    global pointer_x, pointer_y
+    pointer_x = event.x
+    pointer_y = event.y
+
+
 def on_wheel(event: tk.Event) -> None:
     global bestiary_scroll
     if mode == "game" and bestiary_open:
         bestiary_scroll = max(0, bestiary_scroll - event.delta // 6)
 
 
+canvas.bind("<Motion>", on_motion)
 canvas.bind("<Button-1>", on_press)
 canvas.bind("<ButtonRelease-1>", on_release)
 canvas.bind("<MouseWheel>", on_wheel)
