@@ -11,10 +11,13 @@ import time
 from pathlib import Path
 
 import tkinter as tk
-from PIL import Image, ImageDraw, ImageFont, ImageTk
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageTk
 
 DOWNLOADS = Path(r"C:\Users\finle\Downloads")
-COMBO = DOWNLOADS / "Combo Sound Effect.mp3"
+AUDIO_DIR = Path(__file__).resolve().with_name("web") / "audio"
+COMBO = AUDIO_DIR / "combo.mp3"
+if not COMBO.exists():
+    COMBO = DOWNLOADS / "Combo Sound Effect.mp3"
 CACHE = Path(tempfile.gettempdir()) / "test-your-luck"
 FFMPEG = shutil.which("ffmpeg")
 WIDTH = 300
@@ -30,12 +33,14 @@ SAVE = Path(__file__).with_name("bestiary.json")
 RARITIES = (
     {"id": "oblivion", "name": "oblivion", "one_in": 1000000000, "odds": "1 in 1000000000", "color": (90, 0, 20)},
     {"id": "eschaton", "name": "eschaton", "one_in": 500000000, "odds": "1 in 500000000", "color": (255, 40, 20)},
+    {"id": "9", "name": "9", "one_in": 999999999, "rarity": 999999999, "odds": "999,999,999", "color": (255, 40, 180)},
     {"id": "apocalypse", "name": "apocalypse", "one_in": 250000000, "odds": "1 in 250000000", "color": (180, 20, 10)},
     {"id": "rapture", "name": "rapture", "one_in": 200000000, "odds": "1 in 200000000", "color": (255, 220, 140)},
     {"id": "limbo", "name": "limbo", "one_in": 100000000, "odds": "1 in 100000000", "color": (80, 80, 90)},
     {"id": "doom", "name": "doom", "one_in": 75000000, "odds": "1 in 75000000", "color": (120, 20, 20)},
     {"id": "entropy", "name": "entropy", "one_in": 50000000, "odds": "1 in 50000000", "color": (140, 120, 160)},
     {"id": "divinity", "name": "divinity", "one_in": 25000000, "odds": "1 in 25000000", "color": (255, 230, 150)},
+    {"id": "8", "name": "8", "one_in": 88888888, "rarity": 88888888, "odds": "88,888,888", "color": (80, 220, 255)},
     {"id": "omniscience", "name": "omniscience", "one_in": 15000000, "odds": "1 in 15000000", "color": (200, 180, 255)},
     {"id": "absolute", "name": "absolute", "one_in": 12000000, "odds": "1 in 12000000", "color": (240, 240, 255)},
     {"id": "primordial", "name": "primordial", "one_in": 11000000, "odds": "1 in 11000000", "color": (140, 80, 90)},
@@ -50,6 +55,7 @@ RARITIES = (
     {"id": "origin", "name": "origin", "one_in": 3000000, "odds": "1 in 3000000", "color": (255, 220, 160)},
     {"id": "nexus", "name": "nexus", "one_in": 2500000, "odds": "1 in 2500000", "color": (160, 80, 220)},
     {"id": "omniverse", "name": "omniverse", "one_in": 2000000, "odds": "1 in 2000000", "color": (120, 60, 220)},
+    {"id": "7", "name": "7", "one_in": 7777777, "rarity": 7777777, "odds": "7,777,777", "color": (180, 80, 255)},
     {"id": "expanse", "name": "expanse", "one_in": 1800000, "odds": "1 in 1800000", "color": (50, 80, 180)},
     {"id": "multiverse", "name": "multiverse", "one_in": 1500000, "odds": "1 in 1500000", "color": (90, 40, 200)},
     {"id": "veil", "name": "veil", "one_in": 1200000, "odds": "1 in 1200000", "color": (100, 70, 140)},
@@ -69,6 +75,7 @@ RARITIES = (
     {"id": "nebula", "name": "nebula", "one_in": 250000, "odds": "1 in 250000", "color": (180, 60, 200)},
     {"id": "nova", "name": "nova", "one_in": 200000, "odds": "1 in 200000", "color": (255, 160, 60)},
     {"id": "zenith", "name": "zenith", "one_in": 180000, "odds": "1 in 180000", "color": (255, 210, 120)},
+    {"id": "6", "name": "6", "one_in": 666666, "rarity": 666666, "odds": "666,666", "color": (255, 70, 90)},
     {"id": "apex", "name": "apex", "one_in": 160000, "odds": "1 in 160000", "color": (255, 200, 80)},
     {"id": "constellation", "name": "constellation", "one_in": 150000, "odds": "1 in 150000", "color": (230, 230, 255)},
     {"id": "cluster", "name": "cluster", "one_in": 120000, "odds": "1 in 120000", "color": (160, 120, 230)},
@@ -104,6 +111,7 @@ RARITIES = (
     {"id": "galaxy", "name": "galaxy", "one_in": 15000, "odds": "1 in 15000", "color": (110, 80, 200)},
     {"id": "ion", "name": "ion", "one_in": 14500, "odds": "1 in 14500", "color": (140, 200, 255)},
     {"id": "bolt", "name": "bolt", "one_in": 14000, "odds": "1 in 14000", "color": (255, 230, 80)},
+    {"id": "5", "name": "5", "one_in": 55555, "rarity": 55555, "odds": "55,555", "color": (255, 140, 40)},
     {"id": "thunder", "name": "thunder", "one_in": 13000, "odds": "1 in 13000", "color": (230, 230, 80)},
     {"id": "spectrum", "name": "spectrum", "one_in": 12500, "odds": "1 in 12500", "color": (200, 80, 180)},
     {"id": "supernova", "name": "supernova", "one_in": 12000, "odds": "1 in 12000", "color": (255, 130, 50)},
@@ -124,7 +132,7 @@ RARITIES = (
     {"id": "wyvern", "name": "wyvern", "one_in": 7200, "odds": "1 in 7200", "color": (80, 140, 70)},
     {"id": "lightning", "name": "lightning", "one_in": 7000, "odds": "1 in 7000", "color": (255, 240, 120)},
     {"id": "manticore", "name": "manticore", "one_in": 6800, "odds": "1 in 6800", "color": (190, 70, 40)},
-    {"id": "67", "name": "67", "one_in": 6700, "odds": "1 in 6700", "color": (255, 70, 170)},
+    {"id": "67", "name": "67", "one_in": 6700, "rarity": 676767, "odds": "676,767", "color": (255, 70, 170)},
     {"id": "cerberus", "name": "cerberus", "one_in": 6600, "odds": "1 in 6600", "color": (50, 40, 40)},
     {"id": "hydra", "name": "hydra", "one_in": 6500, "odds": "1 in 6500", "color": (30, 140, 80)},
     {"id": "basilisk", "name": "basilisk", "one_in": 6300, "odds": "1 in 6300", "color": (50, 140, 60)},
@@ -172,6 +180,7 @@ RARITIES = (
     {"id": "pearl", "name": "pearl", "one_in": 1400, "odds": "1 in 1400", "color": (236, 226, 214)},
     {"id": "geode", "name": "geode", "one_in": 1300, "odds": "1 in 1300", "color": (140, 90, 180)},
     {"id": "crystal", "name": "crystal", "one_in": 1200, "odds": "1 in 1200", "color": (180, 235, 255)},
+    {"id": "4", "name": "4", "one_in": 4444, "rarity": 4444, "odds": "4,444", "color": (255, 210, 60)},
     {"id": "moonstone", "name": "moonstone", "one_in": 1100, "odds": "1 in 1100", "color": (200, 210, 230)},
     {"id": "la peace", "name": "la peace", "one_in": 1000, "odds": "1 in 1000", "color": (18, 42, 150)},
     {"id": "topaz", "name": "topaz", "one_in": 1000, "odds": "1 in 1000", "color": (255, 164, 40)},
@@ -206,6 +215,7 @@ RARITIES = (
     {"id": "spark", "name": "spark", "one_in": 110, "odds": "1 in 110", "color": (255, 200, 60)},
     {"id": "bronze", "name": "bronze", "one_in": 100, "odds": "1 in 100", "color": (176, 120, 50)},
     {"id": "clay", "name": "clay", "one_in": 90, "odds": "1 in 90", "color": (176, 110, 80)},
+    {"id": "3", "name": "3", "one_in": 333, "rarity": 333, "odds": "333", "color": (80, 220, 120)},
     {"id": "epic", "name": "epic", "one_in": 75, "odds": "1 in 75", "color": (186, 78, 255)},
     {"id": "pebble", "name": "pebble", "one_in": 70, "odds": "1 in 70", "color": (160, 155, 148)},
     {"id": "silver", "name": "silver", "one_in": 60, "odds": "1 in 60", "color": (186, 190, 198)},
@@ -243,14 +253,109 @@ RARITIES = (
     {"id": "iron", "name": "iron", "one_in": 10, "odds": "1 in 10", "color": (192, 198, 206)},
     {"id": "paper", "name": "paper", "one_in": 9, "odds": "1 in 9", "color": (235, 230, 210)},
     {"id": "trash", "name": "trash", "one_in": 8, "odds": "1 in 8", "color": (120, 125, 100)},
+    {"id": "2", "name": "2", "one_in": 22, "rarity": 22, "odds": "22", "color": (80, 160, 255)},
     {"id": "wood", "name": "wood", "one_in": 7, "odds": "1 in 7", "color": (130, 85, 45)},
     {"id": "sticks", "name": "sticks", "one_in": 6, "odds": "1 in 6", "color": (176, 130, 72)},
     {"id": "uncommon", "name": "uncommon", "one_in": 5, "odds": "1 in 5", "color": (45, 210, 95)},
     {"id": "mud", "name": "mud", "one_in": 4, "odds": "1 in 4", "color": (90, 64, 40)},
     {"id": "dirt", "name": "dirt", "one_in": 4, "odds": "1 in 4", "color": (130, 96, 58)},
     {"id": "stone", "name": "stone", "one_in": 3, "odds": "1 in 3", "color": (150, 146, 140)},
+    {"id": "tiny", "name": "tiny", "one_in": 2, "rarity": 2, "odds": "2", "color": (186, 196, 210)},
+    {"id": "medium", "name": "medium", "one_in": 3, "rarity": 3, "odds": "3", "color": (90, 150, 210)},
+    {"id": "splash", "name": "splash", "one_in": 4, "rarity": 4, "odds": "4", "color": (70, 190, 230)},
+    {"id": "fire", "name": "fire", "one_in": 6, "rarity": 6, "odds": "6", "color": (255, 110, 30)},
+    {"id": "lucky", "name": "lucky", "one_in": 25, "rarity": 25, "odds": "25", "color": (48, 180, 72)},
+    {"id": "super lucky", "name": "super lucky", "one_in": 252, "rarity": 252, "odds": "252", "color": (36, 200, 96)},
+    {"id": "ultra lucky", "name": "ultra lucky", "one_in": 777, "rarity": 777, "odds": "777", "color": (255, 206, 48)},
+    {"id": "1", "name": "1", "one_in": 1, "rarity": 1, "odds": "1", "color": (210, 220, 235)},
     {"id": "normal", "name": "normal", "one_in": 2, "odds": "1 in 2", "color": (226, 226, 226)},
+    {"id": "🐉", "name": "🐉", "one_in": 1600, "rarity": 1600, "odds": "1,600", "color": (233, 193, 143)},
+    {"id": "🦄", "name": "🦄", "one_in": 1949, "rarity": 1949, "odds": "1,949", "color": (124, 54, 234)},
+    {"id": "🌈", "name": "🌈", "one_in": 2373, "rarity": 2373, "odds": "2,373", "color": (84, 74, 204)},
+    {"id": "🔥", "name": "🔥", "one_in": 2890, "rarity": 2890, "odds": "2,890", "color": (121, 141, 151)},
+    {"id": "💎", "name": "💎", "one_in": 3519, "rarity": 3519, "odds": "3,519", "color": (114, 104, 124)},
+    {"id": "👑", "name": "👑", "one_in": 4286, "rarity": 4286, "odds": "4,286", "color": (197, 157, 157)},
+    {"id": "⚡", "name": "⚡", "one_in": 5220, "rarity": 5220, "odds": "5,220", "color": (193, 213, 163)},
+    {"id": "🌟", "name": "🌟", "one_in": 6357, "rarity": 6357, "odds": "6,357", "color": (215, 175, 225)},
+    {"id": "🌙", "name": "🌙", "one_in": 7742, "rarity": 7742, "odds": "7,742", "color": (173, 133, 153)},
+    {"id": "🍀", "name": "🍀", "one_in": 9428, "rarity": 9428, "odds": "9,428", "color": (176, 226, 196)},
+    {"id": "💰", "name": "💰", "one_in": 11482, "rarity": 11482, "odds": "11,482", "color": (112, 222, 192)},
+    {"id": "🎲", "name": "🎲", "one_in": 13983, "rarity": 13983, "odds": "13,983", "color": (74, 124, 204)},
+    {"id": "🏆", "name": "🏆", "one_in": 17029, "rarity": 17029, "odds": "17,029", "color": (94, 204, 104)},
+    {"id": "💀", "name": "💀", "one_in": 20738, "rarity": 20738, "odds": "20,738", "color": (136, 66, 126)},
+    {"id": "👻", "name": "👻", "one_in": 25255, "rarity": 25255, "odds": "25,255", "color": (131, 91, 151)},
+    {"id": "🎃", "name": "🎃", "one_in": 30757, "rarity": 30757, "odds": "30,757", "color": (135, 215, 235)},
+    {"id": "🌸", "name": "🌸", "one_in": 37457, "rarity": 37457, "odds": "37,457", "color": (60, 50, 100)},
+    {"id": "🌺", "name": "🌺", "one_in": 45616, "rarity": 45616, "odds": "45,616", "color": (134, 184, 124)},
+    {"id": "🍄", "name": "🍄", "one_in": 55553, "rarity": 55553, "odds": "55,553", "color": (144, 134, 74)},
+    {"id": "🦋", "name": "🦋", "one_in": 67654, "rarity": 67654, "odds": "67,654", "color": (203, 163, 233)},
+    {"id": "🐝", "name": "🐝", "one_in": 82392, "rarity": 82392, "odds": "82,392", "color": (73, 93, 213)},
+    {"id": "🦊", "name": "🦊", "one_in": 100339, "rarity": 100339, "odds": "100,339", "color": (166, 96, 136)},
+    {"id": "🐼", "name": "🐼", "one_in": 122197, "rarity": 122197, "odds": "122,197", "color": (140, 190, 160)},
+    {"id": "🐨", "name": "🐨", "one_in": 148815, "rarity": 148815, "odds": "148,815", "color": (120, 110, 90)},
+    {"id": "🦁", "name": "🦁", "one_in": 181232, "rarity": 181232, "odds": "181,232", "color": (193, 213, 113)},
+    {"id": "🐯", "name": "🐯", "one_in": 220711, "rarity": 220711, "odds": "220,711", "color": (199, 219, 89)},
+    {"id": "🐸", "name": "🐸", "one_in": 268789, "rarity": 268789, "odds": "268,789", "color": (172, 102, 112)},
+    {"id": "🐙", "name": "🐙", "one_in": 327341, "rarity": 327341, "odds": "327,341", "color": (105, 185, 165)},
+    {"id": "🦈", "name": "🦈", "one_in": 398647, "rarity": 398647, "odds": "398,647", "color": (92, 142, 112)},
+    {"id": "🐳", "name": "🐳", "one_in": 485486, "rarity": 485486, "odds": "485,486", "color": (167, 127, 137)},
+    {"id": "🦅", "name": "🦅", "one_in": 591241, "rarity": 591241, "odds": "591,241", "color": (161, 121, 161)},
+    {"id": "🦉", "name": "🦉", "one_in": 720034, "rarity": 720034, "odds": "720,034", "color": (129, 209, 209)},
+    {"id": "🌵", "name": "🌵", "one_in": 876882, "rarity": 876882, "odds": "876,882", "color": (129, 209, 149)},
+    {"id": "🌋", "name": "🌋", "one_in": 1067897, "rarity": 1067897, "odds": "1,067,897", "color": (195, 95, 155)},
+    {"id": "🌊", "name": "🌊", "one_in": 1300522, "rarity": 1300522, "odds": "1,300,522", "color": (158, 208, 228)},
+    {"id": "🍎", "name": "🍎", "one_in": 1583820, "rarity": 1583820, "odds": "1,583,820", "color": (154, 84, 194)},
+    {"id": "🍒", "name": "🍒", "one_in": 1928830, "rarity": 1928830, "odds": "1,928,830", "color": (122, 172, 72)},
+    {"id": "🍇", "name": "🍇", "one_in": 2348995, "rarity": 2348995, "odds": "2,348,995", "color": (75, 155, 195)},
+    {"id": "🍓", "name": "🍓", "one_in": 2860686, "rarity": 2860686, "odds": "2,860,686", "color": (159, 59, 169)},
+    {"id": "🍕", "name": "🍕", "one_in": 3483841, "rarity": 3483841, "odds": "3,483,841", "color": (233, 193, 193)},
+    {"id": "🍩", "name": "🍩", "one_in": 4242741, "rarity": 4242741, "odds": "4,242,741", "color": (73, 93, 93)},
+    {"id": "🎂", "name": "🎂", "one_in": 5166955, "rarity": 5166955, "odds": "5,166,955", "color": (98, 148, 138)},
+    {"id": "⚽", "name": "⚽", "one_in": 6292495, "rarity": 6292495, "odds": "6,292,495", "color": (149, 109, 159)},
+    {"id": "🏀", "name": "🏀", "one_in": 7663215, "rarity": 7663215, "odds": "7,663,215", "color": (232, 162, 202)},
+    {"id": "🎮", "name": "🎮", "one_in": 9332526, "rarity": 9332526, "odds": "9,332,526", "color": (106, 216, 156)},
+    {"id": "🚀", "name": "🚀", "one_in": 11365469, "rarity": 11365469, "odds": "11,365,469", "color": (180, 170, 150)},
+    {"id": "🪐", "name": "🪐", "one_in": 13841257, "rarity": 13841257, "odds": "13,841,257", "color": (140, 190, 220)},
+    {"id": "💫", "name": "💫", "one_in": 16856355, "rarity": 16856355, "odds": "16,856,355", "color": (107, 67, 217)},
+    {"id": "🔮", "name": "🔮", "one_in": 20528246, "rarity": 20528246, "odds": "20,528,246", "color": (94, 204, 174)},
+    {"id": "💍", "name": "💍", "one_in": 25000000, "rarity": 25000000, "odds": "25,000,000", "color": (77, 217, 197)},
+    {"id": "yin yang", "name": "yin yang", "one_in": 5000005, "rarity": 5000005, "odds": "5,000,005", "color": (230, 230, 230)},
+    {"id": "fulgurite", "name": "fulgurite", "one_in": 30000000, "rarity": 30000000, "odds": "30,000,000", "color": (210, 180, 120)},
+    {"id": "kintsugi", "name": "kintsugi", "one_in": 36653550, "rarity": 36653550, "odds": "36,653,550", "color": (212, 175, 55)},
+    {"id": "orrery", "name": "orrery", "one_in": 44782760, "rarity": 44782760, "odds": "44,782,760", "color": (180, 160, 110)},
+    {"id": "antikythera", "name": "antikythera", "one_in": 54715000, "rarity": 54715000, "odds": "54,715,000", "color": (150, 140, 100)},
+    {"id": "astrolabe", "name": "astrolabe", "one_in": 66850000, "rarity": 66850000, "odds": "66,850,000", "color": (196, 160, 70)},
+    {"id": "fluorite", "name": "fluorite", "one_in": 81680000, "rarity": 81680000, "odds": "81,680,000", "color": (120, 90, 200)},
+    {"id": "nautilus", "name": "nautilus", "one_in": 99800000, "rarity": 99800000, "odds": "99,800,000", "color": (230, 200, 160)},
+    {"id": "lodestone", "name": "lodestone", "one_in": 121930000, "rarity": 121930000, "odds": "121,930,000", "color": (90, 90, 100)},
+    {"id": "mycelium", "name": "mycelium", "one_in": 148970000, "rarity": 148970000, "odds": "148,970,000", "color": (170, 150, 110)},
+    {"id": "bioluminescence", "name": "bioluminescence", "one_in": 182010000, "rarity": 182010000, "odds": "182,010,000", "color": (40, 220, 180)},
+    {"id": "kaleidoscope", "name": "kaleidoscope", "one_in": 222370000, "rarity": 222370000, "odds": "222,370,000", "color": (220, 80, 160)},
+    {"id": "sundial", "name": "sundial", "one_in": 271690000, "rarity": 271690000, "odds": "271,690,000", "color": (190, 160, 90)},
+    {"id": "copal", "name": "copal", "one_in": 331950000, "rarity": 331950000, "odds": "331,950,000", "color": (210, 140, 40)},
+    {"id": "tesla", "name": "tesla", "one_in": 405570000, "rarity": 405570000, "odds": "405,570,000", "color": (120, 180, 255)},
+    {"id": "dichroic", "name": "dichroic", "one_in": 495520000, "rarity": 495520000, "odds": "495,520,000", "color": (80, 200, 220)},
+    {"id": "jet", "name": "jet", "one_in": 605420000, "rarity": 605420000, "odds": "605,420,000", "color": (40, 40, 48)},
+    {"id": "brinicle", "name": "brinicle", "one_in": 739690000, "rarity": 739690000, "odds": "739,690,000", "color": (140, 200, 230)},
+    {"id": "lenticular", "name": "lenticular", "one_in": 903740000, "rarity": 903740000, "odds": "903,740,000", "color": (180, 190, 210)},
+    {"id": "mammatus", "name": "mammatus", "one_in": 1104200000, "rarity": 1104200000, "odds": "1,104,200,000", "color": (120, 110, 140)},
+    {"id": "catatumbo", "name": "catatumbo", "one_in": 1349100000, "rarity": 1349100000, "odds": "1,349,100,000", "color": (180, 170, 80)},
+    {"id": "sailing stone", "name": "sailing stone", "one_in": 1648300000, "rarity": 1648300000, "odds": "1,648,300,000", "color": (160, 140, 110)},
+    {"id": "blood falls", "name": "blood falls", "one_in": 2013900000, "rarity": 2013900000, "odds": "2,013,900,000", "color": (180, 40, 40)},
+    {"id": "darvaza", "name": "darvaza", "one_in": 2460500000, "rarity": 2460500000, "odds": "2,460,500,000", "color": (255, 80, 20)},
+    {"id": "richat", "name": "richat", "one_in": 3006200000, "rarity": 3006200000, "odds": "3,006,200,000", "color": (190, 150, 80)},
+    {"id": "socotra", "name": "socotra", "one_in": 3672900000, "rarity": 3672900000, "odds": "3,672,900,000", "color": (80, 140, 70)},
+    {"id": "hoag", "name": "hoag", "one_in": 4487500000, "rarity": 4487500000, "odds": "4,487,500,000", "color": (160, 180, 230)},
+    {"id": "crab nebula", "name": "crab nebula", "one_in": 5482800000, "rarity": 5482800000, "odds": "5,482,800,000", "color": (180, 140, 200)},
+    {"id": "pillars", "name": "pillars", "one_in": 6698800000, "rarity": 6698800000, "odds": "6,698,800,000", "color": (140, 120, 160)},
+    {"id": "cartwheel", "name": "cartwheel", "one_in": 8184700000, "rarity": 8184700000, "odds": "8,184,700,000", "color": (200, 180, 140)},
+    {"id": "heat death", "name": "heat death", "one_in": 10000000000, "rarity": 10000000000, "odds": "10,000,000,000", "color": (80, 40, 50)},
 )
+for rarity in RARITIES:
+    number = rarity.get("rarity", 1 + (rarity["one_in"] - 2) * 4)
+    rarity["rarity"] = number
+    rarity["odds"] = f"{number:,}"
+RARITIES = tuple(sorted(RARITIES, key=lambda item: item["rarity"], reverse=True))
 FONT_12 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 12)
 FONT_14 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 14)
 FONT_16 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 16)
@@ -336,6 +441,12 @@ potion_until = 0.0
 speed_until = 0.0
 mega_left = 0
 roll_pad = 0.06
+roll_over = 0.26
+roll_back = 0.42
+roll_ready = 0.0
+next_multi = 1
+NEXT_MULTI = {"lucky": 2, "super lucky": 3, "ultra lucky": 5}
+STRIP_TILE = 188
 payout_shown = 0
 payout_until = 0.0
 shop_open = False
@@ -367,10 +478,15 @@ def mci_query(command: str) -> str:
 def song_list() -> list[Path]:
     found: list[Path] = []
     for number in (1, 2, 3):
-        for name in (f"song {number}.mp3", f"Song {number}.mp3", f"song{number}.mp3"):
-            path = DOWNLOADS / name
-            if path.exists():
-                found.append(path)
+        for folder in (AUDIO_DIR, DOWNLOADS):
+            hit = None
+            for name in (f"song{number}.mp3", f"song {number}.mp3", f"Song {number}.mp3"):
+                path = folder / name
+                if path.exists():
+                    hit = path
+                    break
+            if hit is not None:
+                found.append(hit)
                 break
     used = {path.name.lower() for path in found}
     used.add(COMBO.name.lower())
@@ -611,13 +727,28 @@ def speed_now() -> int:
     return 2 if time.time() < speed_until else 1
 
 
+WHEEL = tuple(1 / rarity["rarity"] for rarity in RARITIES)
+WHEEL_TOTAL = sum(WHEEL)
+
+
+def spin_wheel() -> dict:
+    mark = random.random() * WHEEL_TOTAL
+    for rarity, weight in zip(RARITIES, WHEEL):
+        mark -= weight
+        if mark <= 0:
+            return rarity
+    return RARITIES[-1]
+
+
 def pick_rarity(boost: int | None = None) -> dict:
     if boost is None:
         boost = luck_now()
-    for rarity in RARITIES[:-1]:
-        if random.random() < boost / rarity["one_in"]:
-            return rarity
-    return RARITIES[-1]
+    best = spin_wheel()
+    for _ in range(max(1, boost) - 1):
+        rolled = spin_wheel()
+        if rolled["rarity"] > best["rarity"]:
+            best = rolled
+    return best
 
 
 def load_progress() -> None:
@@ -785,21 +916,27 @@ def enter_game() -> None:
 def begin_roll() -> None:
     global spinning, pending_result, roll_items, roll_times, roll_started, roll_i
     global show_zoom, show_alpha, land_zoom, land_zoom_target, peace_reveal, roll_pad, mega_left
-    if spinning or bestiary_open or shop_open:
+    global next_multi, roll_over, roll_back
+    if spinning or bestiary_open or shop_open or time.perf_counter() < roll_ready:
         return
     boost = luck_now()
     if mega_left > 0:
         mega_left -= 1
         boost = 100
         store_progress()
+    boost *= next_multi
+    next_multi = 1
     pending_result = pick_rarity(boost)
     count = 40
     roll_items = [pick_rarity(boost) for _ in range(count - 1)]
     roll_items.append(pending_result)
+    roll_items.append(pick_rarity(boost))
     roll_times = []
     pace = speed_now()
     moment = 0.14 / pace
-    roll_pad = 0.06 / pace
+    roll_over = 0.26 / pace
+    roll_back = 0.42 / pace
+    roll_pad = roll_over + roll_back
     for index in range(count):
         along = index / (count - 1)
         moment += (0.022 + (0.5 - 0.022) * (along ** 2.8)) / pace
@@ -877,15 +1014,16 @@ def spawn_burst(rarity: dict) -> None:
 
 def finish_roll() -> None:
     global spinning, last_result, roll_count, land_zoom_target, peace_reveal, peace_burst
-    global money, payout_shown, payout_until
+    global money, payout_shown, payout_until, next_multi, roll_ready
     if pending_result is None:
         spinning = False
         return
     spinning = False
+    roll_ready = time.perf_counter() + 0.5
     last_result = pending_result
     roll_count += 1
-    money += int(pending_result["one_in"])
-    payout_shown = int(pending_result["one_in"])
+    money += int(pending_result["rarity"])
+    payout_shown = int(pending_result["rarity"])
     payout_until = time.perf_counter() + 1.4
     slot = found.get(pending_result["id"])
     if slot is None:
@@ -893,6 +1031,7 @@ def finish_roll() -> None:
     else:
         slot["count"] = int(slot.get("count", 0)) + 1
     store_progress()
+    next_multi *= NEXT_MULTI.get(pending_result["id"], 1)
     if pending_result["id"] == "la peace":
         peace_reveal = 0.0
         peace_burst = False
@@ -909,14 +1048,16 @@ def finish_roll() -> None:
 def tick_spin() -> None:
     global roll_i, show_item, show_zoom, show_alpha, land_zoom, peace_reveal, peace_burst
     now = time.perf_counter()
-    if spinning:
+    if spinning and roll_times:
         elapsed = now - roll_started
-        while roll_i + 1 < len(roll_items) and elapsed >= roll_times[roll_i + 1]:
-            roll_i += 1
-            show_item = roll_items[roll_i]
-            show_zoom = 1.07
-            show_alpha = 60
-        if roll_i >= len(roll_items) - 1 and elapsed >= roll_times[-1] + roll_pad:
+        pos = strip_pos(elapsed)
+        index = max(0, min(len(roll_items) - 1, math.floor(pos + 0.5)))
+        if index != roll_i:
+            roll_i = index
+            show_item = roll_items[index]
+            show_zoom = 1.05
+            show_alpha = 90
+        if elapsed >= roll_times[-1] + roll_over + roll_back:
             finish_roll()
     show_zoom += (1.0 - show_zoom) * 0.42
     show_alpha = min(255, show_alpha + 48)
@@ -1035,27 +1176,69 @@ def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int) -> N
     paint_line(frame, rarity["odds"], FONT_22, rarity["color"], GAME_W / 2, name_y + 44, scale, alpha)
 
 
+def strip_pos(elapsed: float) -> float:
+    target = max(0, len(roll_items) - 2)
+    if not roll_times:
+        return float(target)
+    last = roll_times[-1]
+    if elapsed < last:
+        t = max(0.0, elapsed / last)
+        return target * (1 - (1 - t) ** 2.6)
+    if elapsed < last + roll_over:
+        t = (elapsed - last) / (roll_over or 1)
+        t = 1 - (1 - t) ** 2
+        return target + 0.88 * t
+    if elapsed < last + roll_over + roll_back:
+        t = (elapsed - last - roll_over) / (roll_back or 1)
+        t = t * t * (3 - 2 * t)
+        return target + 0.88 * (1 - t)
+    return float(target)
+
+
+def strip_fade() -> Image.Image:
+    cached = getattr(strip_fade, "mask", None)
+    if cached is not None:
+        return cached
+    fade = 150
+    row = []
+    for x in range(GAME_W):
+        if x < fade:
+            row.append(int(255 * (x + 1) / fade))
+        elif x >= GAME_W - fade:
+            row.append(max(0, int(255 * (GAME_W - x) / fade)))
+        else:
+            row.append(255)
+    line = Image.new("L", (GAME_W, 1))
+    line.putdata(row)
+    strip_fade.mask = line.resize((GAME_W, 200))
+    return strip_fade.mask
+
+
 def paint_roll(frame: Image.Image) -> None:
-    elapsed = time.perf_counter() - roll_started if spinning else 0
-    scale = show_zoom * (1.0 if spinning else land_zoom)
-    if spinning and roll_i < 0 and last_result is not None:
-        fade = max(0, int(255 * (1 - elapsed / 0.14)))
-        paint_named(frame, last_result, 1, fade)
-        return
-    shown = show_item if spinning and show_item is not None else last_result
-    if shown is None:
+    if not roll_items:
         paint_line(frame, "roll", FONT_46, (220, 220, 220), GAME_W / 2, 136, 1, 255)
         return
-    alpha = show_alpha if spinning else 255
-    if shown["id"] == "la peace" and spinning:
-        paint_named(frame, diamond_face(), scale, alpha)
-        return
-    if shown["id"] == "la peace":
-        cover = diamond_face()
-        paint_named(frame, cover, scale, int(alpha * (1 - peace_reveal)))
-        paint_named(frame, shown, scale, int(alpha * peace_reveal))
-        return
-    paint_named(frame, shown, scale, alpha)
+    if spinning:
+        pos = strip_pos(time.perf_counter() - roll_started)
+    else:
+        pos = float(len(roll_items) - 2)
+    band_h = 200
+    band = Image.new("RGBA", (GAME_W, band_h), (0, 0, 0, 0))
+    for index, rarity in enumerate(roll_items):
+        x = GAME_W / 2 + (index - pos) * STRIP_TILE
+        if x < -STRIP_TILE or x > GAME_W + STRIP_TILE:
+            continue
+        face = diamond_face() if rarity["id"] == "la peace" and (spinning or peace_reveal < 0.55) else rarity
+        tile = Image.new("RGBA", (STRIP_TILE - 12, band_h), (0, 0, 0, 0))
+        picture = photos.get(face["id"])
+        if picture is not None:
+            shot = picture.resize((104, 104), Image.Resampling.BILINEAR)
+            tile.paste(shot, ((tile.width - 104) // 2, 8), shot)
+        paint_line(tile, face["name"], FONT_16, face["color"], tile.width / 2, 132, 1, 255)
+        paint_line(tile, face["odds"], FONT_12, face["color"], tile.width / 2, 156, 1, 255)
+        band.paste(tile, (int(x - tile.width / 2), 0), tile)
+    band.putalpha(ImageChops.multiply(band.getchannel("A"), strip_fade()))
+    frame.paste(band, (0, 24), band)
 
 
 def paint_bestiary(frame: Image.Image) -> None:
@@ -1122,8 +1305,14 @@ def paint_luck_timer(frame: Image.Image) -> None:
     if potion_until > now:
         chips.append((f"2x  {potion_clock(potion_until - now)}", (45, 230, 95, 255)))
     if mega_left > 0:
-        label = "100x next" if mega_left == 1 else f"100x x{mega_left}"
+        if next_multi > 1:
+            label = f"mega x{mega_left}"
+        else:
+            label = "100x next" if mega_left == 1 else f"100x x{mega_left}"
         chips.append((label, (255, 196, 64, 255)))
+    if next_multi > 1:
+        stacked = (100 if mega_left else luck_now()) * next_multi
+        chips.append((f"{stacked}x next", (48, 220, 96, 255)))
     pen = ImageDraw.Draw(frame)
     height = 26
     for index, (label, color) in enumerate(chips):
@@ -1146,8 +1335,10 @@ def compose_game(env: dict | None, pos: float | None) -> Image.Image:
     paint_bars(frame, env, pos)
     paint_particles(frame)
     if not bestiary_open and not shop_open:
-        roll_held = held_name == "roll" or spinning
-        paint_ui_button(frame, ROLL_BOX, "rolling" if spinning else "roll", roll_held, FONT_16)
+        wait = roll_ready - time.perf_counter()
+        roll_held = held_name == "roll" or spinning or wait > 0
+        label = "rolling" if spinning else f"{wait:.1f}" if wait > 0 else "roll"
+        paint_ui_button(frame, ROLL_BOX, label, roll_held, FONT_16)
         paint_ui_button(frame, DEX_BOX, "bestiary", held_name == "bestiary", FONT_14)
         paint_ui_button(frame, SHOP_BOX, "shop", held_name == "shop", FONT_14)
     if bestiary_open:
