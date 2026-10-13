@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import threading
 import time
+import urllib.request
+import uuid
 from pathlib import Path
 
 import tkinter as tk
@@ -672,6 +674,14 @@ STRIP_TILE = 188
 payout_shown = 0
 payout_until = 0.0
 shop_open = False
+board_open = False
+board_scroll = 0
+board_rows: list[dict] = []
+board_note = ""
+username = ""
+player_id = ""
+best_id = ""
+best_rarity = 0
 reset_taps = 0
 POTION_COST = 375
 SPEED_COST = 450
@@ -685,6 +695,8 @@ POTION_SECONDS = 300
 ROLL_BOX = (GAME_W // 2 - 74, 196, 148, 34)
 DEX_BOX = (GAME_W // 2 - 74, 242, 148, 30)
 SHOP_BOX = (GAME_W // 2 - 74, 284, 148, 30)
+BOARD_BOX = (GAME_W // 2 - 74, 326, 148, 30)
+NAME_BOX = (12, 44, 150, 24)
 RESET_BOX = (12, GAME_H - 34, 64, 22)
 BUY_LUCK_BOX = (GAME_W // 2 - 220, 148, 140, 28)
 BUY_SPEED_BOX = (GAME_W // 2 + 80, 148, 140, 28)
@@ -1047,13 +1059,17 @@ def progress_body() -> dict:
     return {
         "autoclicker_on": autoclicker_on,
         "autoclicker_owned": autoclicker_owned,
+        "best_id": best_id,
+        "best_rarity": best_rarity,
         "clover_tier": clover_tier,
         "found": found,
         "mega_left": mega_left,
         "money": money,
+        "player_id": player_id,
         "potion_until": potion_until,
         "rolls": roll_count,
         "speed_until": speed_until,
+        "username": username,
     }
 
 
@@ -1067,6 +1083,7 @@ def seal_text(payload: str) -> str:
 
 def apply_progress(data: dict) -> None:
     global roll_count, found, money, potion_until, speed_until, mega_left, clover_tier, autoclicker_owned, autoclicker_on
+    global username, player_id, best_id, best_rarity
     roll_count = max(0, int(data.get("rolls", 0)))
     money = max(0, int(data.get("money", 0)))
     potion_until = float(data.get("potion_until", 0))
@@ -1077,6 +1094,11 @@ def apply_progress(data: dict) -> None:
     autoclicker_on = bool(data.get("autoclicker_on", False)) and autoclicker_owned
     loaded = data.get("found", {})
     found = loaded if isinstance(loaded, dict) else {}
+    username = clean_name(str(data.get("username", "")))
+    player_id = str(data.get("player_id", "") or "")
+    best_id = str(data.get("best_id", "") or "")
+    best_rarity = max(0, int(data.get("best_rarity", 0) or 0))
+    sync_best_from_found()
 
 
 def load_progress() -> None:
@@ -1114,10 +1136,120 @@ def store_progress() -> None:
     SAVE.with_name("bestiary.lock").write_text("1", encoding="utf-8")
 
 
+BOARD_ROOT = "https://mantledb.sh/v2/tyl-luck-board-7f3a"
+
+
+def clean_name(raw: str) -> str:
+    return "".join(char for char in raw.strip() if char >= " " and char != "\x7f")[:16]
+
+
+def known_item(item_id: str) -> dict | None:
+    return next((row for row in RARITIES if row["id"] == item_id), None)
+
+
+def sync_best_from_found() -> None:
+    global best_id, best_rarity
+    top = best_rarity
+    top_id = best_id
+    for item_id, slot in found.items():
+        if int(slot.get("count", 0)) <= 0:
+            continue
+        item = known_item(str(item_id))
+        if item is not None and int(item["rarity"]) > top:
+            top = int(item["rarity"])
+            top_id = item["id"]
+    best_rarity = top
+    best_id = top_id
+
+
+def ensure_player() -> None:
+    global player_id
+    if not player_id:
+        player_id = uuid.uuid4().hex
+
+
+def push_best() -> None:
+    if not player_id and not username and not best_id:
+        return
+    created = not player_id
+    ensure_player()
+    if created:
+        store_progress()
+    payload = json.dumps({"name": username, "id": best_id}).encode("utf-8")
+    target = f"{BOARD_ROOT}/p/{player_id}"
+
+    def send() -> None:
+        try:
+            request = urllib.request.Request(
+                target,
+                data=payload,
+                method="POST",
+                headers={"Content-Type": "application/json", "User-Agent": "test-your-luck"},
+            )
+            urllib.request.urlopen(request, timeout=12).read()
+        except Exception:
+            pass
+
+    threading.Thread(target=send, daemon=True).start()
+
+
+def pull_board() -> None:
+    global board_note, board_rows
+    board_note = "loading"
+    board_rows = []
+
+    def load() -> None:
+        global board_rows, board_note
+        try:
+            listing = urllib.request.Request(
+                "https://mantledb.sh/v2/list/tyl-luck-board-7f3a",
+                headers={"User-Agent": "test-your-luck"},
+            )
+            listed = json.loads(urllib.request.urlopen(listing, timeout=12).read().decode("utf-8"))
+            rows = []
+            for entry in listed.get("entries") or []:
+                path = str(entry.get("path") or "")
+                if not path.startswith("p/"):
+                    continue
+                got = urllib.request.urlopen(
+                    urllib.request.Request(f"{BOARD_ROOT}/{path}", headers={"User-Agent": "test-your-luck"}),
+                    timeout=12,
+                )
+                data = json.loads(got.read().decode("utf-8"))
+                item = known_item(str(data.get("id") or ""))
+                name = clean_name(str(data.get("name") or ""))
+                if item is None or not name:
+                    continue
+                rows.append({"name": name, "item": item["name"], "rarity": int(item["rarity"]), "id": item["id"], "player": path[2:]})
+            rows.sort(key=lambda row: row["rarity"], reverse=True)
+            board_rows = rows
+            board_note = "" if rows else "nobody yet"
+        except Exception:
+            board_note = "offline"
+
+    threading.Thread(target=load, daemon=True).start()
+
+
+def ask_name() -> None:
+    global username
+    import tkinter.simpledialog as simpledialog
+
+    picked = simpledialog.askstring("name", "username", initialvalue=username, parent=root)
+    if picked is None:
+        return
+    cleaned = clean_name(picked)
+    if not cleaned:
+        return
+    username = cleaned
+    store_progress()
+    push_best()
+
+
 def tap_reset() -> None:
     global reset_taps, money, roll_count, found, potion_until, speed_until, mega_left
     global clover_tier, autoclicker_owned, autoclicker_on, next_multi, spinning, pending_result
     global last_result, show_item, payout_until, roll_ready, land_zoom, land_zoom_target, peace_reveal
+    global username, best_id, best_rarity
     reset_taps += 1
     if reset_taps < 10:
         return
@@ -1142,7 +1274,11 @@ def tap_reset() -> None:
     peace_reveal = 1
     particles.clear()
     reset_taps = 0
+    username = ""
+    best_id = ""
+    best_rarity = 0
     store_progress()
+    push_best()
 
 
 def money_text(amount: int) -> str:
@@ -1408,7 +1544,7 @@ def spawn_burst(rarity: dict) -> None:
 
 def finish_roll() -> None:
     global spinning, last_result, roll_count, land_zoom_target, peace_reveal, peace_burst
-    global money, payout_shown, payout_until, next_multi, roll_ready
+    global money, payout_shown, payout_until, next_multi, roll_ready, best_id, best_rarity
     if pending_result is None:
         spinning = False
         return
@@ -1424,7 +1560,13 @@ def finish_roll() -> None:
         found[pending_result["id"]] = {"count": 1, "first": roll_count}
     else:
         slot["count"] = int(slot.get("count", 0)) + 1
-    store_progress()
+    if int(pending_result["rarity"]) > best_rarity:
+        best_rarity = int(pending_result["rarity"])
+        best_id = pending_result["id"]
+        store_progress()
+        push_best()
+    else:
+        store_progress()
     next_multi *= NEXT_MULTI.get(pending_result["id"], 1)
     if pending_result["id"] == "la peace":
         peace_reveal = 0.0
@@ -1452,7 +1594,7 @@ def tick_spin() -> None:
             play_tick()
         if roll_i >= len(roll_items) - 1 and elapsed >= roll_times[len(roll_items) - 1] + roll_pad:
             finish_roll()
-    if autoclicker_on and not spinning and not bestiary_open and not shop_open and mode == "game":
+    if autoclicker_on and not spinning and not bestiary_open and not shop_open and not board_open and mode == "game":
         if now >= roll_ready + 1.5 and money >= 3:
             begin_roll(True)
     show_zoom += (1.0 - show_zoom) * 0.42
@@ -1486,7 +1628,7 @@ def point_in(box: tuple[int, int, int, int], x: int, y: int) -> bool:
 
 
 def game_button_at(x: int, y: int) -> str | None:
-    if bestiary_open or shop_open:
+    if bestiary_open or shop_open or board_open:
         if shop_open and point_in(BUY_LUCK_BOX, x, y):
             return "buy"
         if shop_open and point_in(BUY_SPEED_BOX, x, y):
@@ -1504,6 +1646,10 @@ def game_button_at(x: int, y: int) -> str | None:
         return "bestiary"
     if point_in(SHOP_BOX, x, y):
         return "shop"
+    if point_in(BOARD_BOX, x, y):
+        return "board"
+    if point_in(NAME_BOX, x, y):
+        return "name"
     if point_in(RESET_BOX, x, y):
         return "reset"
     return None
@@ -1658,6 +1804,38 @@ def paint_bestiary(frame: Image.Image) -> None:
     paint_ui_button(frame, BACK_BOX, "back", held_name == "back", FONT_14)
 
 
+def paint_board(frame: Image.Image) -> None:
+    global board_scroll
+    veil = Image.new("RGBA", (GAME_W, GAME_H), (16, 16, 18, 255))
+    frame.alpha_composite(veil)
+    pen = ImageDraw.Draw(frame)
+    pen.text((GAME_W / 2, 36), "leaderboard", font=FONT_28, fill=(255, 255, 255, 255), anchor="mm")
+    rows = list(board_rows)
+    if board_note:
+        pen.text((GAME_W / 2, 150), board_note, font=FONT_16, fill=(180, 180, 180, 255), anchor="mm")
+    view_top = 68
+    view_h = GAME_H - 132
+    row_h = 36
+    content_h = max(view_h, len(rows) * row_h)
+    board_scroll = max(0, min(board_scroll, content_h - view_h))
+    sheet = Image.new("RGBA", (GAME_W, content_h), (0, 0, 0, 0))
+    sheet_pen = ImageDraw.Draw(sheet)
+    for index, row in enumerate(rows):
+        y = index * row_h + 16
+        mine = row["player"] == player_id
+        fill = (255, 214, 80, 255) if mine else (230, 230, 230, 255)
+        sheet_pen.text((16, y), str(index + 1), font=FONT_14, fill=fill, anchor="lm")
+        sheet_pen.text((48, y), row["name"], font=FONT_16, fill=fill, anchor="lm")
+        item = known_item(row["id"])
+        sheet_pen.text((250, y), row["item"], font=FONT_16, fill=item["color"] + (255,) if item else fill, anchor="lm")
+        screen_y = view_top + y - board_scroll
+        label = shown_odds(item, hovering_right(GAME_W - 16, screen_y, item, FONT_14)) if item else f"{row['rarity']:,}"
+        sheet_pen.text((GAME_W - 16, y), label, font=FONT_14, fill=(210, 210, 210, 255), anchor="rm")
+    shown = sheet.crop((0, board_scroll, GAME_W, board_scroll + view_h))
+    frame.paste(shown, (0, view_top), shown)
+    paint_ui_button(frame, BACK_BOX, "back", held_name == "back", FONT_14)
+
+
 def paint_shop(frame: Image.Image) -> None:
     veil = Image.new("RGBA", (GAME_W, GAME_H), (16, 16, 18, 255))
     frame.alpha_composite(veil)
@@ -1748,10 +1926,14 @@ def compose_game(env: dict | None, pos: float | None) -> Image.Image:
         paint_ui_button(frame, ROLL_BOX, label, roll_held, FONT_16)
         paint_ui_button(frame, DEX_BOX, "bestiary", held_name == "bestiary", FONT_14)
         paint_ui_button(frame, SHOP_BOX, "shop", held_name == "shop", FONT_14)
+        paint_ui_button(frame, BOARD_BOX, "board", held_name == "board", FONT_14)
+        paint_ui_button(frame, NAME_BOX, username or "set name", held_name == "name", FONT_12)
         reset_label = "reset" if reset_taps == 0 else f"{reset_taps}/10"
         paint_ui_button(frame, RESET_BOX, reset_label, held_name == "reset", FONT_12)
     if bestiary_open:
         paint_bestiary(frame)
+    if board_open:
+        paint_board(frame)
     if shop_open:
         paint_shop(frame)
     paint_luck_timer(frame)
@@ -1830,7 +2012,7 @@ def on_press(event: tk.Event) -> None:
 
 
 def on_release(event: tk.Event) -> None:
-    global held_start, held_name, bestiary_open, bestiary_scroll, shop_open
+    global held_start, held_name, bestiary_open, bestiary_scroll, shop_open, board_open, board_scroll
     if mode == "intro":
         x, y, w, h = play_box
         over = intro_done and x <= event.x < x + w and y <= event.y < y + h
@@ -1845,10 +2027,20 @@ def on_release(event: tk.Event) -> None:
         elif chosen == "bestiary":
             bestiary_open = True
             shop_open = False
+            board_open = False
             bestiary_scroll = 0
         elif chosen == "shop":
             shop_open = True
             bestiary_open = False
+            board_open = False
+        elif chosen == "board":
+            board_open = True
+            bestiary_open = False
+            shop_open = False
+            board_scroll = 0
+            pull_board()
+        elif chosen == "name":
+            ask_name()
         elif chosen == "reset":
             tap_reset()
         elif chosen == "buy":
@@ -1864,6 +2056,7 @@ def on_release(event: tk.Event) -> None:
         elif chosen == "back":
             bestiary_open = False
             shop_open = False
+            board_open = False
     held_name = None
 
 
@@ -1899,6 +2092,8 @@ if TICK.exists():
     mci_cmd(f'open "{TICK}" type waveaudio alias tick')
 
 load_progress()
+if username and best_id:
+    push_best()
 load_photos()
 load_stars()
 threading.Thread(target=preload, daemon=True).start()
@@ -1909,9 +2104,11 @@ def on_motion(event: tk.Event) -> None:
 
 
 def on_wheel(event: tk.Event) -> None:
-    global bestiary_scroll
+    global bestiary_scroll, board_scroll
     if mode == "game" and bestiary_open:
         bestiary_scroll = max(0, bestiary_scroll - event.delta // 6)
+    elif mode == "game" and board_open:
+        board_scroll = max(0, board_scroll - event.delta // 6)
 
 
 canvas.bind("<Motion>", on_motion)

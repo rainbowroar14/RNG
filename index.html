@@ -623,6 +623,8 @@ const START_BOX = { x: INTRO_W / 2 - 46, y: STAGE_H - 36, w: 92, h: 26 };
 const ROLL_BOX = { x: GAME_W / 2 - 74, y: 196, w: 148, h: 34 };
 const DEX_BOX = { x: GAME_W / 2 - 74, y: 242, w: 148, h: 30 };
 const SHOP_BOX = { x: GAME_W / 2 - 74, y: 284, w: 148, h: 30 };
+const BOARD_BOX = { x: GAME_W / 2 - 74, y: 326, w: 148, h: 30 };
+const NAME_BOX = { x: 12, y: 44, w: 150, h: 24 };
 const RESET_BOX = { x: 12, y: GAME_H - 34, w: 64, h: 22 };
 const BUY_LUCK = { x: GAME_W / 2 - 220, y: 148, w: 140, h: 28 };
 const BUY_SPEED = { x: GAME_W / 2 + 80, y: 148, w: 140, h: 28 };
@@ -661,6 +663,14 @@ const STRIP_TILE = 188;
 let payoutShown = 0;
 let payoutUntil = 0;
 let shopOpen = false;
+let boardOpen = false;
+let boardScroll = 0;
+let boardRows = [];
+let boardNote = "";
+let username = "";
+let playerId = "";
+let bestId = "";
+let bestRarity = 0;
 let resetTaps = 0;
 
 let mode = "intro";
@@ -721,13 +731,17 @@ function progressBody() {
   return JSON.stringify({
     autoclickerOn,
     autoclickerOwned,
+    bestId,
+    bestRarity,
     cloverTier,
     found,
     megaLeft,
     money,
+    playerId,
     potionUntil,
     rolls,
     speedUntil,
+    username,
   });
 }
 
@@ -741,6 +755,11 @@ function applyProgress(saved) {
   cloverTier = Math.min(3, Math.max(0, saved.cloverTier || 0));
   autoclickerOwned = !!saved.autoclickerOwned;
   autoclickerOn = !!saved.autoclickerOn && autoclickerOwned;
+  username = cleanName(saved.username || "");
+  playerId = String(saved.playerId || "");
+  bestId = String(saved.bestId || "");
+  bestRarity = Math.max(0, saved.bestRarity || 0);
+  syncBestFromFound();
 }
 
 function store() {
@@ -776,6 +795,89 @@ function load() {
 }
 
 load();
+
+function cleanName(raw) {
+  return String(raw || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 16);
+}
+
+function knownItem(id) {
+  return RARITIES.find((row) => row.id === id) || null;
+}
+
+function syncBestFromFound() {
+  Object.entries(found).forEach(([id, slot]) => {
+    if (!slot || slot.count <= 0) return;
+    const item = knownItem(id);
+    if (item && item.rarity > bestRarity) {
+      bestRarity = item.rarity;
+      bestId = item.id;
+    }
+  });
+}
+
+function ensurePlayer() {
+  if (playerId) return;
+  const made = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}${Math.random().toString(16).slice(2)}`;
+  playerId = made.replace(/-/g, "");
+}
+
+const BOARD_ROOT = "https://mantledb.sh/v2/tyl-luck-board-7f3a";
+
+function pushBest() {
+  if (!playerId && !username && !bestId) return;
+  const created = !playerId;
+  ensurePlayer();
+  if (created) store();
+  fetch(`${BOARD_ROOT}/p/${playerId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: username, id: bestId }),
+  }).catch(() => {});
+}
+
+async function pullBoard() {
+  boardNote = "loading";
+  boardRows = [];
+  try {
+    const listed = await (await fetch("https://mantledb.sh/v2/list/tyl-luck-board-7f3a")).json();
+    const rows = [];
+    for (const entry of listed.entries || []) {
+      const path = String(entry.path || "");
+      if (!path.startsWith("p/")) continue;
+      const data = await (await fetch(`${BOARD_ROOT}/${path}`)).json();
+      const item = knownItem(data.id);
+      const name = cleanName(data.name);
+      if (!item || !name) continue;
+      rows.push({
+        name,
+        item: item.name,
+        rarity: item.rarity,
+        id: item.id,
+        color: item.color,
+        odds: item.odds,
+        chance: item.chance,
+        player: path.slice(2),
+      });
+    }
+    rows.sort((a, b) => b.rarity - a.rarity);
+    boardRows = rows;
+    boardNote = rows.length ? "" : "nobody yet";
+  } catch (error) {
+    boardNote = "offline";
+  }
+}
+
+function askName() {
+  const picked = prompt("username", username);
+  if (picked === null) return;
+  const cleaned = cleanName(picked);
+  if (!cleaned) return;
+  username = cleaned;
+  store();
+  pushBest();
+}
+
+if (username && bestId) pushBest();
 
 function luckNow() {
   return Date.now() < potionUntil ? 2 : 1;
@@ -1107,7 +1209,14 @@ function finishRoll() {
   payoutUntil = performance.now() + 1400;
   if (!found[result.id]) found[result.id] = { count: 0, first: rolls };
   found[result.id].count += 1;
-  store();
+  if (result.rarity > bestRarity) {
+    bestRarity = result.rarity;
+    bestId = result.id;
+    store();
+    pushBest();
+  } else {
+    store();
+  }
   nextMulti *= NEXT_MULTI[result.id] || 1;
   if (result.id === "la peace") {
     peaceReveal = 0;
@@ -1152,12 +1261,16 @@ function tapReset() {
   peaceReveal = 1;
   particles = [];
   resetTaps = 0;
+  username = "";
+  bestId = "";
+  bestRarity = 0;
   store();
+  pushBest();
 }
 
 function buttonAt(x, y) {
   if (mode === "intro") return inBox(START_BOX, x, y) && introDone ? "start" : null;
-  if (bestiaryOpen || shopOpen) {
+  if (bestiaryOpen || shopOpen || boardOpen) {
     if (shopOpen && inBox(BUY_LUCK, x, y)) return "buy";
     if (shopOpen && inBox(BUY_SPEED, x, y)) return "buy-speed";
     if (shopOpen && inBox(BUY_MEGA, x, y)) return "buy-mega";
@@ -1168,6 +1281,8 @@ function buttonAt(x, y) {
   if (inBox(ROLL_BOX, x, y)) return "roll";
   if (inBox(DEX_BOX, x, y)) return "bestiary";
   if (inBox(SHOP_BOX, x, y)) return "shop";
+  if (inBox(BOARD_BOX, x, y)) return "board";
+  if (inBox(NAME_BOX, x, y)) return "name";
   if (inBox(RESET_BOX, x, y)) return "reset";
   return null;
 }
@@ -1579,6 +1694,51 @@ function paintLuckTimer() {
   });
 }
 
+function paintBoard() {
+  ctx.fillStyle = "#101012";
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.fillStyle = "#fff";
+  ctx.font = "28px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("leaderboard", GAME_W / 2, 36);
+  if (boardNote) {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#b4b4b4";
+    ctx.fillText(boardNote, GAME_W / 2, 150);
+  }
+  const viewTop = 68;
+  const viewH = GAME_H - 132;
+  const rowH = 36;
+  const contentH = Math.max(viewH, boardRows.length * rowH);
+  boardScroll = Math.max(0, Math.min(boardScroll, contentH - viewH));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, viewTop, GAME_W, viewH);
+  ctx.clip();
+  boardRows.forEach((row, index) => {
+    const y = viewTop + index * rowH + 16 - boardScroll;
+    const mine = row.player === playerId;
+    ctx.fillStyle = mine ? "#ffd650" : "#e6e6e6";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(index + 1), 16, y);
+    ctx.font = "16px Arial";
+    ctx.fillText(row.name, 48, y);
+    ctx.fillStyle = css(row.color);
+    ctx.fillText(row.item, 250, y);
+    ctx.font = "14px Arial";
+    const width = Math.max(ctx.measureText(row.odds).width, ctx.measureText(row.chance).width);
+    const over = pointer.x >= GAME_W - 16 - width && pointer.x <= GAME_W - 10 && Math.abs(pointer.y - y) <= 12;
+    ctx.fillStyle = "#d2d2d2";
+    ctx.textAlign = "right";
+    ctx.fillText(over ? row.chance : row.odds, GAME_W - 16, y);
+  });
+  ctx.restore();
+  roundButton(BACK_BOX, "back", heldName === "back", "14px Arial");
+}
+
 function paintGame() {
   ctx.fillStyle = "#101012";
   ctx.fillRect(0, 0, GAME_W, GAME_H);
@@ -1597,12 +1757,16 @@ function paintGame() {
   paintRoll();
   paintBars();
   paintParticles();
-  if (!bestiaryOpen && !shopOpen) {
+  if (boardOpen) {
+    paintBoard();
+  } else if (!bestiaryOpen && !shopOpen) {
     const wait = rollReady - performance.now();
     const rollLabel = spinning ? "rolling" : wait > 0 ? (wait / 1000).toFixed(1) : "roll";
     roundButton(ROLL_BOX, rollLabel, heldName === "roll" || spinning || wait > 0, "16px Arial");
     roundButton(DEX_BOX, "bestiary", heldName === "bestiary", "14px Arial");
     roundButton(SHOP_BOX, "shop", heldName === "shop", "14px Arial");
+    roundButton(BOARD_BOX, "board", heldName === "board", "14px Arial");
+    roundButton(NAME_BOX, username || "set name", heldName === "name", "12px Arial");
     roundButton(RESET_BOX, resetTaps === 0 ? "reset" : `${resetTaps}/10`, heldName === "reset", "12px Arial");
   } else if (bestiaryOpen) {
     paintBestiary();
@@ -1660,7 +1824,7 @@ function frame(now) {
       }
       if (rollIndex >= rollItems.length - 1 && elapsed >= rollTimes[rollItems.length - 1] + rollPad) finishRoll();
     }
-    if (autoclickerOn && !spinning && !bestiaryOpen && !shopOpen && performance.now() >= rollReady + 1500 && money >= 3) beginRoll(true);
+    if (autoclickerOn && !spinning && !bestiaryOpen && !shopOpen && !boardOpen && performance.now() >= rollReady + 1500 && money >= 3) beginRoll(true);
     showZoom += (1 - showZoom) * Math.min(1, dt * 26);
     showAlpha = Math.min(255, showAlpha + dt * 3000);
     landZoom += (landZoomTarget - landZoom) * Math.min(1, dt * 9);
@@ -1715,12 +1879,22 @@ canvas.addEventListener("pointerup", (event) => {
     if (name === "bestiary") {
       bestiaryOpen = true;
       shopOpen = false;
+      boardOpen = false;
       bestiaryScroll = 0;
     }
     if (name === "shop") {
       shopOpen = true;
       bestiaryOpen = false;
+      boardOpen = false;
     }
+    if (name === "board") {
+      boardOpen = true;
+      bestiaryOpen = false;
+      shopOpen = false;
+      boardScroll = 0;
+      pullBoard();
+    }
+    if (name === "name") askName();
     if (name === "reset") tapReset();
     if (name === "buy") buyLuck();
     if (name === "buy-speed") buySpeed();
@@ -1730,6 +1904,7 @@ canvas.addEventListener("pointerup", (event) => {
     if (name === "back") {
       bestiaryOpen = false;
       shopOpen = false;
+      boardOpen = false;
     }
   }
   heldStart = false;
@@ -1738,8 +1913,9 @@ canvas.addEventListener("pointerup", (event) => {
 });
 
 canvas.addEventListener("wheel", (event) => {
-  if (mode === "game" && bestiaryOpen) {
-    bestiaryScroll = Math.max(0, bestiaryScroll + event.deltaY * 0.4);
+  if (mode === "game" && (bestiaryOpen || boardOpen)) {
+    if (boardOpen) boardScroll = Math.max(0, boardScroll + event.deltaY * 0.4);
+    else bestiaryScroll = Math.max(0, bestiaryScroll + event.deltaY * 0.4);
     event.preventDefault();
   }
 }, { passive: false });
