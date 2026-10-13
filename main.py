@@ -686,10 +686,10 @@ reset_taps = 0
 POTION_COST = 375
 SPEED_COST = 450
 MEGA_COST = 12000
-CLOVER_COST = (1000, 2500, 10000)
-CLOVER_LUCK = (1.0, 1.10, 1.25, 1.50)
-CLOVER_NAME = ("4 leaf clover", "5 leaf clover", "6 leaf clover")
-CLOVER_NOTE = ("10% increase", "25% increase", "50% increase")
+CLOVER_COST = (1000, 2500, 10000, 100000, 250000, 500000, 1000000)
+CLOVER_LUCK = (1.0, 1.10, 1.25, 1.50, 1.80, 1.90, 2.00, 2.50)
+CLOVER_NAME = ("4 leaf clover", "5 leaf clover", "6 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover")
+CLOVER_NOTE = ("10% increase", "25% increase", "50% increase", "80% increase", "90% increase", "100% increase", "150% increase")
 AUTO_COST = 3000
 POTION_SECONDS = 300
 ROLL_BOX = (GAME_W // 2 - 74, 196, 148, 34)
@@ -997,7 +997,7 @@ def spin_wheel() -> dict:
 
 
 def luck_spins(boost: float) -> int:
-    scaled = float(boost) * CLOVER_LUCK[min(3, max(0, clover_tier))]
+    scaled = float(boost) * CLOVER_LUCK[min(len(CLOVER_LUCK) - 1, max(0, clover_tier))]
     spins = int(scaled)
     if random.random() < scaled - spins:
         spins += 1
@@ -1089,7 +1089,7 @@ def apply_progress(data: dict) -> None:
     potion_until = float(data.get("potion_until", 0))
     speed_until = float(data.get("speed_until", 0))
     mega_left = max(0, int(data.get("mega_left", 0)))
-    clover_tier = min(3, max(0, int(data.get("clover_tier", 0))))
+    clover_tier = min(len(CLOVER_NAME), max(0, int(data.get("clover_tier", 0))))
     autoclicker_owned = bool(data.get("autoclicker_owned", False))
     autoclicker_on = bool(data.get("autoclicker_on", False)) and autoclicker_owned
     loaded = data.get("found", {})
@@ -1230,8 +1230,34 @@ def pull_board() -> None:
     threading.Thread(target=load, daemon=True).start()
 
 
+def same_name(left: str, right: str) -> bool:
+    return clean_name(left).casefold() == clean_name(right).casefold()
+
+
+def name_taken(wanted: str) -> bool:
+    ensure_player()
+    listing = urllib.request.Request(
+        "https://mantledb.sh/v2/list/tyl-luck-board-7f3a",
+        headers={"User-Agent": "test-your-luck"},
+    )
+    listed = json.loads(urllib.request.urlopen(listing, timeout=12).read().decode("utf-8"))
+    for entry in listed.get("entries") or []:
+        path = str(entry.get("path") or "")
+        if not path.startswith("p/") or path[2:] == player_id:
+            continue
+        got = urllib.request.urlopen(
+            urllib.request.Request(f"{BOARD_ROOT}/{path}", headers={"User-Agent": "test-your-luck"}),
+            timeout=12,
+        )
+        data = json.loads(got.read().decode("utf-8"))
+        if same_name(str(data.get("name") or ""), wanted):
+            return True
+    return False
+
+
 def ask_name() -> None:
     global username
+    import tkinter.messagebox as messagebox
     import tkinter.simpledialog as simpledialog
 
     picked = simpledialog.askstring("name", "username", initialvalue=username, parent=root)
@@ -1240,9 +1266,35 @@ def ask_name() -> None:
     cleaned = clean_name(picked)
     if not cleaned:
         return
-    username = cleaned
-    store_progress()
-    push_best()
+    if same_name(username, cleaned):
+        username = cleaned
+        store_progress()
+        push_best()
+        return
+
+    def check() -> None:
+        failed = False
+        taken = False
+        try:
+            taken = name_taken(cleaned)
+        except Exception:
+            failed = True
+
+        def apply() -> None:
+            global username
+            if failed:
+                messagebox.showinfo("name", "offline", parent=root)
+                return
+            if taken:
+                messagebox.showinfo("name", "that name is taken", parent=root)
+                return
+            username = cleaned
+            store_progress()
+            push_best()
+
+        root.after(0, apply)
+
+    threading.Thread(target=check, daemon=True).start()
 
 
 def tap_reset() -> None:
@@ -1319,7 +1371,7 @@ def buy_mega() -> None:
 
 def buy_clover() -> None:
     global money, clover_tier
-    if clover_tier >= 3:
+    if clover_tier >= len(CLOVER_NAME):
         return
     cost = CLOVER_COST[clover_tier]
     if money < cost:
@@ -1853,8 +1905,8 @@ def paint_shop(frame: Image.Image) -> None:
     pen.text((luck_x, 196), "100x luck", font=FONT_22, fill=(255, 196, 64, 255), anchor="mm")
     pen.text((luck_x, 214), "next roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
     pen.text((luck_x, 230), "$12,000", font=FONT_16, fill=(255, 196, 64, 255), anchor="mm")
-    owned = clover_tier >= 3
-    leaf = 2 if owned else clover_tier
+    owned = clover_tier >= len(CLOVER_NAME)
+    leaf = len(CLOVER_NAME) - 1 if owned else clover_tier
     pen.text((speed_x, 196), CLOVER_NAME[leaf], font=FONT_22, fill=(48, 180, 72, 255), anchor="mm")
     pen.text((speed_x, 214), CLOVER_NOTE[leaf], font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
     pen.text((speed_x, 230), "owned" if owned else money_text(CLOVER_COST[clover_tier]), font=FONT_16, fill=(48, 180, 72, 255), anchor="mm")

@@ -635,10 +635,10 @@ const BACK_BOX = { x: GAME_W / 2 - 52, y: 368, w: 104, h: 28 };
 const POTION_COST = 375;
 const SPEED_COST = 450;
 const MEGA_COST = 12000;
-const CLOVER_COST = [1000, 2500, 10000];
-const CLOVER_LUCK = [1, 1.1, 1.25, 1.5];
-const CLOVER_NAME = ["4 leaf clover", "5 leaf clover", "6 leaf clover"];
-const CLOVER_NOTE = ["10% increase", "25% increase", "50% increase"];
+const CLOVER_COST = [1000, 2500, 10000, 100000, 250000, 500000, 1000000];
+const CLOVER_LUCK = [1, 1.1, 1.25, 1.5, 1.8, 1.9, 2, 2.5];
+const CLOVER_NAME = ["4 leaf clover", "5 leaf clover", "6 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover"];
+const CLOVER_NOTE = ["10% increase", "25% increase", "50% increase", "80% increase", "90% increase", "100% increase", "150% increase"];
 const AUTO_COST = 3000;
 const POTION_MS = 5 * 60 * 1000;
 
@@ -752,7 +752,7 @@ function applyProgress(saved) {
   potionUntil = saved.potionUntil || 0;
   speedUntil = saved.speedUntil || 0;
   megaLeft = Math.max(0, saved.megaLeft || 0);
-  cloverTier = Math.min(3, Math.max(0, saved.cloverTier || 0));
+  cloverTier = Math.min(CLOVER_NAME.length, Math.max(0, saved.cloverTier || 0));
   autoclickerOwned = !!saved.autoclickerOwned;
   autoclickerOn = !!saved.autoclickerOn && autoclickerOwned;
   username = cleanName(saved.username || "");
@@ -867,11 +867,42 @@ async function pullBoard() {
   }
 }
 
-function askName() {
+function sameName(left, right) {
+  return cleanName(left).toLowerCase() === cleanName(right).toLowerCase();
+}
+
+async function nameTaken(wanted) {
+  ensurePlayer();
+  const listed = await (await fetch("https://mantledb.sh/v2/list/tyl-luck-board-7f3a")).json();
+  for (const entry of listed.entries || []) {
+    const path = String(entry.path || "");
+    if (!path.startsWith("p/") || path.slice(2) === playerId) continue;
+    const data = await (await fetch(`${BOARD_ROOT}/${path}`)).json();
+    if (sameName(data.name, wanted)) return true;
+  }
+  return false;
+}
+
+async function askName() {
   const picked = prompt("username", username);
   if (picked === null) return;
   const cleaned = cleanName(picked);
   if (!cleaned) return;
+  if (sameName(username, cleaned)) {
+    username = cleaned;
+    store();
+    pushBest();
+    return;
+  }
+  try {
+    if (await nameTaken(cleaned)) {
+      alert("that name is taken");
+      return;
+    }
+  } catch (error) {
+    alert("offline");
+    return;
+  }
   username = cleaned;
   store();
   pushBest();
@@ -903,7 +934,7 @@ function spinWheel() {
 }
 
 function luckSpins(boost) {
-  const scaled = boost * CLOVER_LUCK[Math.min(3, Math.max(0, cloverTier))];
+  const scaled = boost * CLOVER_LUCK[Math.min(CLOVER_LUCK.length - 1, Math.max(0, cloverTier))];
   let spins = Math.floor(scaled);
   if (Math.random() < scaled - spins) spins += 1;
   return Math.max(1, spins);
@@ -974,7 +1005,7 @@ function buyMega() {
 }
 
 function buyClover() {
-  if (cloverTier >= 3) return;
+  if (cloverTier >= CLOVER_NAME.length) return;
   const cost = CLOVER_COST[cloverTier];
   if (money < cost) return;
   money -= cost;
@@ -1633,8 +1664,8 @@ function paintShop() {
   ctx.fillText("next roll", luckX, 214);
   ctx.fillStyle = "#ffc440";
   ctx.fillText("$12,000", luckX, 230);
-  const owned = cloverTier >= 3;
-  const leaf = owned ? 2 : cloverTier;
+  const owned = cloverTier >= CLOVER_NAME.length;
+  const leaf = owned ? CLOVER_NAME.length - 1 : cloverTier;
   ctx.font = "22px Arial";
   ctx.fillStyle = "#30b448";
   ctx.fillText(CLOVER_NAME[leaf], speedX, 196);
