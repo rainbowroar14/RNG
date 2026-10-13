@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Test Your Luck</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0c0c0e;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    display: block;
+    background: #141414;
+    flex: 0 0 auto;
+  }
+</style>
+</head>
+<body>
+<canvas id="view" width="300" height="198"></canvas>
+<script>
+const canvas = document.getElementById("view");
+const ctx = canvas.getContext("2d");
+let viewW = 300;
+let viewH = 198;
+
+function fitCanvas() {
+  const ratio = viewW / viewH;
+  let cssW = window.innerWidth;
+  let cssH = cssW / ratio;
+  if (cssH > window.innerHeight) {
+    cssH = window.innerHeight;
+    cssW = cssH * ratio;
+  }
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.width = `${cssW}px`;
+  canvas.style.height = `${cssH}px`;
+  const bitmapW = Math.max(1, Math.round(cssW * dpr));
+  const bitmapH = Math.max(1, Math.round(cssH * dpr));
+  if (canvas.width !== bitmapW || canvas.height !== bitmapH) {
+    canvas.width = bitmapW;
+    canvas.height = bitmapH;
+  }
+  ctx.setTransform(canvas.width / viewW, 0, 0, canvas.height / viewH, 0, 0);
+}
+
+const RARITIES = [
+  { id: "oblivion", name: "oblivion", oneIn: 1000000000, odds: "1 in 1000000000", color: [90, 0, 20] },
+  { id: "eschaton", name: "eschaton", oneIn: 500000000, odds: "1 in 500000000", color: [255, 40, 20] },
+  { id: "apocalypse", name: "apocalypse", oneIn: 250000000, odds: "1 in 250000000", color: [180, 20, 10] },
+  { id: "rapture", name: "rapture", oneIn: 200000000, odds: "1 in 200000000", color: [255, 220, 140] },
+  { id: "limbo", name: "limbo", oneIn: 100000000, odds: "1 in 100000000", color: [80, 80, 90] },
+  { id: "doom", name: "doom", oneIn: 75000000, odds: "1 in 75000000", color: [120, 20, 20] },
+  { id: "entropy", name: "entropy", oneIn: 50000000, odds: "1 in 50000000", color: [140, 120, 160] },
+  { id: "divinity", name: "divinity", oneIn: 25000000, odds: "1 in 25000000", color: [255, 230, 150] },
+  { id: "omniscience", name: "omniscience", oneIn: 15000000, odds: "1 in 15000000", color: [200, 180, 255] },
+  { id: "absolute", name: "absolute", oneIn: 12000000, odds: "1 in 12000000", color: [240, 240, 255] },
+  { id: "primordial", name: "primordial", oneIn: 11000000, odds: "1 in 11000000", color: [140, 80, 90] },
+  { id: "cataclysm", name: "cataclysm", oneIn: 10500000, odds: "1 in 10500000", color: [255, 60, 20] },
+  { id: "paradox", name: "paradox", oneIn: 10000000, odds: "1 in 10000000", color: [4, 2, 12] },
+  { id: "abyss", name: "abyss", oneIn: 8000000, odds: "1 in 8000000", color: [2, 0, 8] },
+  { id: "genesis", name: "genesis", oneIn: 7000000, odds: "1 in 7000000", color: [255, 240, 200] },
+  { id: "continuum", name: "continuum", oneIn: 6000000, odds: "1 in 6000000", color: [80, 90, 160] },
+  { id: "aeon", name: "aeon", oneIn: 5500000, odds: "1 in 5500000", color: [70, 80, 140] },
+  { id: "eternity", name: "eternity", oneIn: 5000000, odds: "1 in 5000000", color: [6, 8, 22] },
+  { id: "firmament", name: "firmament", oneIn: 4000000, odds: "1 in 4000000", color: [40, 70, 150] },
+  { id: "origin", name: "origin", oneIn: 3000000, odds: "1 in 3000000", color: [255, 220, 160] },
+  { id: "nexus", name: "nexus", oneIn: 2500000, odds: "1 in 2500000", color: [160, 80, 220] },
+  { id: "omniverse", name: "omniverse", oneIn: 2000000, odds: "1 in 2000000", color: [120, 60, 220] },
+  { id: "expanse", name: "expanse", oneIn: 1800000, odds: "1 in 1800000", color: [50, 80, 180] },
+  { id: "multiverse", name: "multiverse", oneIn: 1500000, odds: "1 in 1500000", color: [90, 40, 200] },
+  { id: "veil", name: "veil", oneIn: 1200000, odds: "1 in 1200000", color: [100, 70, 140] },
+  { id: "threshold", name: "threshold", oneIn: 1100000, odds: "1 in 1100000", color: [160, 140, 200] },
+  { id: "singularity", name: "singularity", oneIn: 1000000, odds: "1 in 1000000", color: [8, 4, 16] },
+  { id: "aether", name: "aether", oneIn: 850000, odds: "1 in 850000", color: [180, 220, 255] },
+  { id: "cosmos", name: "cosmos", oneIn: 750000, odds: "1 in 750000", color: [30, 60, 160] },
+  { id: "meridian", name: "meridian", oneIn: 680000, odds: "1 in 680000", color: [255, 180, 90] },
+  { id: "horizon", name: "horizon", oneIn: 600000, odds: "1 in 600000", color: [255, 140, 80] },
+  { id: "infinity", name: "infinity", oneIn: 500000, odds: "1 in 500000", color: [220, 220, 255] },
+  { id: "fissure", name: "fissure", oneIn: 450000, odds: "1 in 450000", color: [160, 50, 40] },
+  { id: "rift", name: "rift", oneIn: 400000, odds: "1 in 400000", color: [140, 40, 180] },
+  { id: "portal", name: "portal", oneIn: 380000, odds: "1 in 380000", color: [120, 40, 200] },
+  { id: "wormhole", name: "wormhole", oneIn: 350000, odds: "1 in 350000", color: [80, 40, 140] },
+  { id: "eventide", name: "eventide", oneIn: 300000, odds: "1 in 300000", color: [40, 30, 80] },
+  { id: "twilight", name: "twilight", oneIn: 270000, odds: "1 in 270000", color: [90, 60, 140] },
+  { id: "nebula", name: "nebula", oneIn: 250000, odds: "1 in 250000", color: [180, 60, 200] },
+  { id: "nova", name: "nova", oneIn: 200000, odds: "1 in 200000", color: [255, 160, 60] },
+  { id: "zenith", name: "zenith", oneIn: 180000, odds: "1 in 180000", color: [255, 210, 120] },
+  { id: "apex", name: "apex", oneIn: 160000, odds: "1 in 160000", color: [255, 200, 80] },
+  { id: "constellation", name: "constellation", oneIn: 150000, odds: "1 in 150000", color: [230, 230, 255] },
+  { id: "cluster", name: "cluster", oneIn: 120000, odds: "1 in 120000", color: [160, 120, 230] },
+  { id: "void", name: "void", oneIn: 100000, odds: "1 in 100000", color: [12, 6, 24] },
+  { id: "orbit", name: "orbit", oneIn: 90000, odds: "1 in 90000", color: [80, 160, 220] },
+  { id: "apogee", name: "apogee", oneIn: 85000, odds: "1 in 85000", color: [120, 180, 230] },
+  { id: "satellite", name: "satellite", oneIn: 80000, odds: "1 in 80000", color: [180, 190, 200] },
+  { id: "quasar", name: "quasar", oneIn: 75000, odds: "1 in 75000", color: [255, 236, 160] },
+  { id: "titan", name: "titan", oneIn: 70000, odds: "1 in 70000", color: [190, 170, 130] },
+  { id: "halo", name: "halo", oneIn: 65000, odds: "1 in 65000", color: [230, 230, 180] },
+  { id: "moon", name: "moon", oneIn: 60000, odds: "1 in 60000", color: [210, 210, 200] },
+  { id: "vortex", name: "vortex", oneIn: 55000, odds: "1 in 55000", color: [60, 80, 180] },
+  { id: "universe", name: "universe", oneIn: 50000, odds: "1 in 50000", color: [36, 48, 140] },
+  { id: "ring", name: "ring", oneIn: 45000, odds: "1 in 45000", color: [220, 190, 120] },
+  { id: "band", name: "band", oneIn: 42000, odds: "1 in 42000", color: [210, 180, 90] },
+  { id: "pulsar", name: "pulsar", oneIn: 40000, odds: "1 in 40000", color: [80, 220, 255] },
+  { id: "meteor", name: "meteor", oneIn: 35000, odds: "1 in 35000", color: [255, 120, 40] },
+  { id: "solar", name: "solar", oneIn: 32000, odds: "1 in 32000", color: [255, 200, 60] },
+  { id: "planet", name: "planet", oneIn: 30000, odds: "1 in 30000", color: [70, 140, 210] },
+  { id: "echo", name: "echo", oneIn: 28000, odds: "1 in 28000", color: [140, 180, 220] },
+  { id: "black hole", name: "black hole", oneIn: 25000, odds: "1 in 25000", color: [28, 28, 40] },
+  { id: "flare", name: "flare", oneIn: 24000, odds: "1 in 24000", color: [255, 90, 40] },
+  { id: "prominence", name: "prominence", oneIn: 23000, odds: "1 in 23000", color: [255, 120, 40] },
+  { id: "sun", name: "sun", oneIn: 22000, odds: "1 in 22000", color: [255, 180, 40] },
+  { id: "corona", name: "corona", oneIn: 21000, odds: "1 in 21000", color: [255, 150, 50] },
+  { id: "asteroid", name: "asteroid", oneIn: 20000, odds: "1 in 20000", color: [120, 110, 100] },
+  { id: "aurora", name: "aurora", oneIn: 18000, odds: "1 in 18000", color: [40, 220, 140] },
+  { id: "borealis", name: "borealis", oneIn: 17500, odds: "1 in 17500", color: [40, 200, 160] },
+  { id: "cyclone", name: "cyclone", oneIn: 17000, odds: "1 in 17000", color: [90, 110, 150] },
+  { id: "tempest", name: "tempest", oneIn: 16500, odds: "1 in 16500", color: [70, 90, 130] },
+  { id: "storm", name: "storm", oneIn: 16000, odds: "1 in 16000", color: [70, 80, 110] },
+  { id: "maelstrom", name: "maelstrom", oneIn: 15500, odds: "1 in 15500", color: [40, 60, 110] },
+  { id: "galaxy", name: "galaxy", oneIn: 15000, odds: "1 in 15000", color: [110, 80, 200] },
+  { id: "ion", name: "ion", oneIn: 14500, odds: "1 in 14500", color: [140, 200, 255] },
+  { id: "bolt", name: "bolt", oneIn: 14000, odds: "1 in 14000", color: [255, 230, 80] },
+  { id: "thunder", name: "thunder", oneIn: 13000, odds: "1 in 13000", color: [230, 230, 80] },
+  { id: "spectrum", name: "spectrum", oneIn: 12500, odds: "1 in 12500", color: [200, 80, 180] },
+  { id: "supernova", name: "supernova", oneIn: 12000, odds: "1 in 12000", color: [255, 130, 50] },
+  { id: "collapse", name: "collapse", oneIn: 11500, odds: "1 in 11500", color: [30, 20, 40] },
+  { id: "eclipse", name: "eclipse", oneIn: 11000, odds: "1 in 11000", color: [70, 70, 120] },
+  { id: "chroma", name: "chroma", oneIn: 10500, odds: "1 in 10500", color: [255, 120, 160] },
+  { id: "rainbow", name: "rainbow", oneIn: 10000, odds: "1 in 10000", color: [255, 90, 140] },
+  { id: "prism", name: "prism", oneIn: 9500, odds: "1 in 9500", color: [180, 220, 255] },
+  { id: "nimbus", name: "nimbus", oneIn: 9200, odds: "1 in 9200", color: [200, 210, 230] },
+  { id: "comet", name: "comet", oneIn: 9000, odds: "1 in 9000", color: [170, 215, 255] },
+  { id: "centaur", name: "centaur", oneIn: 8800, odds: "1 in 8800", color: [170, 130, 70] },
+  { id: "pegasus", name: "pegasus", oneIn: 8500, odds: "1 in 8500", color: [230, 230, 240] },
+  { id: "chimera", name: "chimera", oneIn: 8200, odds: "1 in 8200", color: [180, 90, 50] },
+  { id: "griffin", name: "griffin", oneIn: 8000, odds: "1 in 8000", color: [196, 150, 70] },
+  { id: "thunderbird", name: "thunderbird", oneIn: 7700, odds: "1 in 7700", color: [40, 80, 180] },
+  { id: "phoenix", name: "phoenix", oneIn: 7500, odds: "1 in 7500", color: [255, 80, 20] },
+  { id: "roc", name: "roc", oneIn: 7300, odds: "1 in 7300", color: [160, 80, 40] },
+  { id: "wyvern", name: "wyvern", oneIn: 7200, odds: "1 in 7200", color: [80, 140, 70] },
+  { id: "lightning", name: "lightning", oneIn: 7000, odds: "1 in 7000", color: [255, 240, 120] },
+  { id: "manticore", name: "manticore", oneIn: 6800, odds: "1 in 6800", color: [190, 70, 40] },
+  { id: "67", name: "67", oneIn: 6700, odds: "1 in 6700", color: [255, 70, 170] },
+  { id: "cerberus", name: "cerberus", oneIn: 6600, odds: "1 in 6600", color: [50, 40, 40] },
+  { id: "hydra", name: "hydra", oneIn: 6500, odds: "1 in 6500", color: [30, 140, 80] },
+  { id: "basilisk", name: "basilisk", oneIn: 6300, odds: "1 in 6300", color: [50, 140, 60] },
+  { id: "serpent", name: "serpent", oneIn: 6200, odds: "1 in 6200", color: [40, 120, 70] },
+  { id: "kraken", name: "kraken", oneIn: 6000, odds: "1 in 6000", color: [20, 90, 120] },
+  { id: "leviathan", name: "leviathan", oneIn: 5700, odds: "1 in 5700", color: [20, 70, 110] },
+  { id: "talisman", name: "talisman", oneIn: 5600, odds: "1 in 5600", color: [180, 140, 50] },
+  { id: "relic", name: "relic", oneIn: 5500, odds: "1 in 5500", color: [180, 140, 70] },
+  { id: "idol", name: "idol", oneIn: 5200, odds: "1 in 5200", color: [200, 160, 80] },
+  { id: "totem", name: "totem", oneIn: 5100, odds: "1 in 5100", color: [160, 90, 40] },
+  { id: "dragon", name: "dragon", oneIn: 5000, odds: "1 in 5000", color: [170, 28, 36] },
+  { id: "salamander", name: "salamander", oneIn: 4900, odds: "1 in 4900", color: [220, 80, 30] },
+  { id: "sphinx", name: "sphinx", oneIn: 4800, odds: "1 in 4800", color: [196, 160, 90] },
+  { id: "ankh", name: "ankh", oneIn: 4700, odds: "1 in 4700", color: [212, 175, 55] },
+  { id: "scepter", name: "scepter", oneIn: 4600, odds: "1 in 4600", color: [230, 190, 70] },
+  { id: "crown", name: "crown", oneIn: 4500, odds: "1 in 4500", color: [255, 196, 48] },
+  { id: "tiara", name: "tiara", oneIn: 4300, odds: "1 in 4300", color: [230, 210, 140] },
+  { id: "chalice", name: "chalice", oneIn: 4200, odds: "1 in 4200", color: [220, 190, 80] },
+  { id: "alicorn", name: "alicorn", oneIn: 4100, odds: "1 in 4100", color: [255, 180, 220] },
+  { id: "unicorn", name: "unicorn", oneIn: 4000, odds: "1 in 4000", color: [255, 150, 210] },
+  { id: "harp", name: "harp", oneIn: 3900, odds: "1 in 3900", color: [220, 180, 80] },
+  { id: "compass", name: "compass", oneIn: 3800, odds: "1 in 3800", color: [180, 60, 50] },
+  { id: "goblet", name: "goblet", oneIn: 3600, odds: "1 in 3600", color: [210, 180, 90] },
+  { id: "urn", name: "urn", oneIn: 3550, odds: "1 in 3550", color: [190, 150, 70] },
+  { id: "trumpet", name: "trumpet", oneIn: 3500, odds: "1 in 3500", color: [212, 150, 45] },
+  { id: "flute", name: "flute", oneIn: 3400, odds: "1 in 3400", color: [200, 170, 90] },
+  { id: "key", name: "key", oneIn: 3200, odds: "1 in 3200", color: [212, 175, 55] },
+  { id: "locket", name: "locket", oneIn: 3100, odds: "1 in 3100", color: [200, 160, 70] },
+  { id: "treasure", name: "treasure", oneIn: 3000, odds: "1 in 3000", color: [255, 196, 40] },
+  { id: "coin", name: "coin", oneIn: 2800, odds: "1 in 2800", color: [230, 190, 60] },
+  { id: "ingot", name: "ingot", oneIn: 2700, odds: "1 in 2700", color: [190, 160, 50] },
+  { id: "medallion", name: "medallion", oneIn: 2600, odds: "1 in 2600", color: [210, 170, 60] },
+  { id: "emerald", name: "emerald", oneIn: 2500, odds: "1 in 2500", color: [16, 170, 90] },
+  { id: "turquoise", name: "turquoise", oneIn: 2400, odds: "1 in 2400", color: [40, 190, 180] },
+  { id: "jade", name: "jade", oneIn: 2200, odds: "1 in 2200", color: [30, 160, 110] },
+  { id: "beryl", name: "beryl", oneIn: 2150, odds: "1 in 2150", color: [80, 200, 170] },
+  { id: "spinel", name: "spinel", oneIn: 2100, odds: "1 in 2100", color: [220, 60, 90] },
+  { id: "sapphire", name: "sapphire", oneIn: 2000, odds: "1 in 2000", color: [24, 90, 220] },
+  { id: "peridot", name: "peridot", oneIn: 1900, odds: "1 in 1900", color: [140, 210, 60] },
+  { id: "garnet", name: "garnet", oneIn: 1800, odds: "1 in 1800", color: [160, 30, 50] },
+  { id: "citrine", name: "citrine", oneIn: 1700, odds: "1 in 1700", color: [240, 180, 50] },
+  { id: "amethyst", name: "amethyst", oneIn: 1600, odds: "1 in 1600", color: [150, 70, 210] },
+  { id: "tanzanite", name: "tanzanite", oneIn: 1550, odds: "1 in 1550", color: [80, 70, 180] },
+  { id: "amber", name: "amber", oneIn: 1500, odds: "1 in 1500", color: [230, 150, 30] },
+  { id: "pearl", name: "pearl", oneIn: 1400, odds: "1 in 1400", color: [236, 226, 214] },
+  { id: "geode", name: "geode", oneIn: 1300, odds: "1 in 1300", color: [140, 90, 180] },
+  { id: "crystal", name: "crystal", oneIn: 1200, odds: "1 in 1200", color: [180, 235, 255] },
+  { id: "moonstone", name: "moonstone", oneIn: 1100, odds: "1 in 1100", color: [200, 210, 230] },
+  { id: "la peace", name: "la peace", oneIn: 1000, odds: "1 in 1000", color: [18, 42, 150] },
+  { id: "topaz", name: "topaz", oneIn: 1000, odds: "1 in 1000", color: [255, 164, 40] },
+  { id: "onyx", name: "onyx", oneIn: 900, odds: "1 in 900", color: [30, 30, 34] },
+  { id: "opal", name: "opal", oneIn: 800, odds: "1 in 800", color: [190, 170, 255] },
+  { id: "granite", name: "granite", oneIn: 750, odds: "1 in 750", color: [140, 130, 125] },
+  { id: "slate", name: "slate", oneIn: 720, odds: "1 in 720", color: [90, 100, 110] },
+  { id: "titanium", name: "titanium", oneIn: 700, odds: "1 in 700", color: [150, 158, 166] },
+  { id: "flint", name: "flint", oneIn: 650, odds: "1 in 650", color: [80, 80, 85] },
+  { id: "marble", name: "marble", oneIn: 600, odds: "1 in 600", color: [230, 230, 235] },
+  { id: "shale", name: "shale", oneIn: 580, odds: "1 in 580", color: [110, 100, 90] },
+  { id: "basalt", name: "basalt", oneIn: 550, odds: "1 in 550", color: [50, 50, 55] },
+  { id: "ruby", name: "ruby", oneIn: 500, odds: "1 in 500", color: [230, 48, 72] },
+  { id: "coral", name: "coral", oneIn: 450, odds: "1 in 450", color: [255, 110, 120] },
+  { id: "magma", name: "magma", oneIn: 420, odds: "1 in 420", color: [200, 40, 20] },
+  { id: "mythic", name: "mythic", oneIn: 400, odds: "1 in 400", color: [255, 45, 150] },
+  { id: "cinder", name: "cinder", oneIn: 380, odds: "1 in 380", color: [80, 70, 68] },
+  { id: "lava", name: "lava", oneIn: 350, odds: "1 in 350", color: [255, 70, 20] },
+  { id: "ember", name: "ember", oneIn: 320, odds: "1 in 320", color: [255, 90, 30] },
+  { id: "obsidian", name: "obsidian", oneIn: 300, odds: "1 in 300", color: [48, 46, 54] },
+  { id: "frost", name: "frost", oneIn: 275, odds: "1 in 275", color: [190, 220, 255] },
+  { id: "legendary", name: "legendary", oneIn: 250, odds: "1 in 250", color: [255, 196, 64] },
+  { id: "ice", name: "ice", oneIn: 225, odds: "1 in 225", color: [180, 230, 255] },
+  { id: "snow", name: "snow", oneIn: 210, odds: "1 in 210", color: [245, 248, 255] },
+  { id: "platinum", name: "platinum", oneIn: 200, odds: "1 in 200", color: [206, 212, 218] },
+  { id: "hail", name: "hail", oneIn: 190, odds: "1 in 190", color: [200, 220, 230] },
+  { id: "star", name: "star", oneIn: 175, odds: "1 in 175", color: [255, 230, 80] },
+  { id: "diamond", name: "diamond", oneIn: 150, odds: "1 in 150", color: [120, 230, 255] },
+  { id: "gem", name: "gem", oneIn: 130, odds: "1 in 130", color: [80, 220, 200] },
+  { id: "feather", name: "feather", oneIn: 125, odds: "1 in 125", color: [230, 220, 200] },
+  { id: "quartz", name: "quartz", oneIn: 120, odds: "1 in 120", color: [196, 206, 214] },
+  { id: "spark", name: "spark", oneIn: 110, odds: "1 in 110", color: [255, 200, 60] },
+  { id: "bronze", name: "bronze", oneIn: 100, odds: "1 in 100", color: [176, 120, 50] },
+  { id: "clay", name: "clay", oneIn: 90, odds: "1 in 90", color: [176, 110, 80] },
+  { id: "epic", name: "epic", oneIn: 75, odds: "1 in 75", color: [186, 78, 255] },
+  { id: "pebble", name: "pebble", oneIn: 70, odds: "1 in 70", color: [160, 155, 148] },
+  { id: "silver", name: "silver", oneIn: 60, odds: "1 in 60", color: [186, 190, 198] },
+  { id: "brass", name: "brass", oneIn: 55, odds: "1 in 55", color: [190, 160, 70] },
+  { id: "gold", name: "gold", oneIn: 50, odds: "1 in 50", color: [230, 180, 40] },
+  { id: "pyrite", name: "pyrite", oneIn: 45, odds: "1 in 45", color: [180, 160, 50] },
+  { id: "tin", name: "tin", oneIn: 42, odds: "1 in 42", color: [170, 175, 180] },
+  { id: "ash", name: "ash", oneIn: 40, odds: "1 in 40", color: [110, 108, 106] },
+  { id: "cloth", name: "cloth", oneIn: 38, odds: "1 in 38", color: [180, 170, 190] },
+  { id: "string", name: "string", oneIn: 36, odds: "1 in 36", color: [220, 210, 180] },
+  { id: "dust", name: "dust", oneIn: 35, odds: "1 in 35", color: [170, 155, 130] },
+  { id: "chalk", name: "chalk", oneIn: 33, odds: "1 in 33", color: [235, 235, 230] },
+  { id: "soot", name: "soot", oneIn: 32, odds: "1 in 32", color: [90, 88, 86] },
+  { id: "brick", name: "brick", oneIn: 31, odds: "1 in 31", color: [170, 70, 50] },
+  { id: "gravel", name: "gravel", oneIn: 30, odds: "1 in 30", color: [140, 136, 128] },
+  { id: "pinecone", name: "pinecone", oneIn: 29, odds: "1 in 29", color: [130, 90, 50] },
+  { id: "shard", name: "shard", oneIn: 28, odds: "1 in 28", color: [190, 200, 210] },
+  { id: "acorn", name: "acorn", oneIn: 27, odds: "1 in 27", color: [120, 80, 40] },
+  { id: "weed", name: "weed", oneIn: 26, odds: "1 in 26", color: [90, 140, 50] },
+  { id: "rare", name: "rare", oneIn: 25, odds: "1 in 25", color: [72, 156, 255] },
+  { id: "seed", name: "seed", oneIn: 24, odds: "1 in 24", color: [160, 130, 70] },
+  { id: "bark", name: "bark", oneIn: 23, odds: "1 in 23", color: [110, 75, 45] },
+  { id: "twig", name: "twig", oneIn: 22, odds: "1 in 22", color: [140, 100, 60] },
+  { id: "coal", name: "coal", oneIn: 21, odds: "1 in 21", color: [45, 45, 48] },
+  { id: "copper", name: "copper", oneIn: 20, odds: "1 in 20", color: [184, 112, 48] },
+  { id: "rust", name: "rust", oneIn: 19, odds: "1 in 19", color: [166, 82, 42] },
+  { id: "bone", name: "bone", oneIn: 18, odds: "1 in 18", color: [226, 214, 186] },
+  { id: "moss", name: "moss", oneIn: 17, odds: "1 in 17", color: [70, 120, 55] },
+  { id: "dog", name: "dog", oneIn: 16, odds: "1 in 16", color: [150, 100, 55] },
+  { id: "leaf", name: "leaf", oneIn: 15, odds: "1 in 15", color: [58, 156, 48] },
+  { id: "sand", name: "sand", oneIn: 14, odds: "1 in 14", color: [206, 184, 130] },
+  { id: "shell", name: "shell", oneIn: 13, odds: "1 in 13", color: [224, 176, 156] },
+  { id: "cat", name: "cat", oneIn: 12, odds: "1 in 12", color: [230, 140, 70] },
+  { id: "glass", name: "glass", oneIn: 11, odds: "1 in 11", color: [176, 206, 214] },
+  { id: "iron", name: "iron", oneIn: 10, odds: "1 in 10", color: [192, 198, 206] },
+  { id: "paper", name: "paper", oneIn: 9, odds: "1 in 9", color: [235, 230, 210] },
+  { id: "trash", name: "trash", oneIn: 8, odds: "1 in 8", color: [120, 125, 100] },
+  { id: "wood", name: "wood", oneIn: 7, odds: "1 in 7", color: [130, 85, 45] },
+  { id: "sticks", name: "sticks", oneIn: 6, odds: "1 in 6", color: [176, 130, 72] },
+  { id: "uncommon", name: "uncommon", oneIn: 5, odds: "1 in 5", color: [45, 210, 95] },
+  { id: "mud", name: "mud", oneIn: 4, odds: "1 in 4", color: [90, 64, 40] },
+  { id: "dirt", name: "dirt", oneIn: 4, odds: "1 in 4", color: [130, 96, 58] },
+  { id: "stone", name: "stone", oneIn: 3, odds: "1 in 3", color: [150, 146, 140] },
+  { id: "normal", name: "normal", oneIn: 2, odds: "1 in 2", color: [226, 226, 226] },
+];
+const DIAMOND = RARITIES.find((rarity) => rarity.id === "diamond");
+
+const BEATS = [150, 810, 1465, 2115, 2795, 3445, 4130, 4345, 4980, 5195, 5400, 5615];
+const WORDS = [
+  { text: "Test", color: "#f4f4f4", size: 20, angle: -14, x: 68, y: 34, drop: 16, ms: 110, big: false, bold: false },
+  { text: "Your", color: "#f4f4f4", size: 20, angle: 12, x: 222, y: 50, drop: 16, ms: 110, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 22, angle: -11, x: 74, y: 78, drop: 14, ms: 110, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 22, angle: 10, x: 214, y: 96, drop: 14, ms: 110, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 24, angle: -8, x: 118, y: 46, drop: 14, ms: 110, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 26, angle: 9, x: 186, y: 108, drop: 14, ms: 110, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 24, angle: -12, x: 58, y: 100, drop: 12, ms: 100, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 28, angle: 7, x: 230, y: 72, drop: 12, ms: 100, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 34, angle: -5, x: 150, y: 80, drop: 16, ms: 120, big: true, bold: true },
+  { text: "Luck", color: "#2de65f", size: 26, angle: 11, x: 96, y: 62, drop: 10, ms: 90, big: false, bold: false },
+  { text: "Luck", color: "#2de65f", size: 30, angle: -9, x: 206, y: 88, drop: 10, ms: 90, big: false, bold: false },
+  { text: "LUCK", color: "#2de65f", size: 46, angle: -2, x: 150, y: 74, drop: 64, ms: 200, big: true, bold: true, scale: 1.4 },
+];
+
+const INTRO_W = 300;
+const INTRO_H = 198;
+const STAGE_H = 160;
+const GAME_W = 640;
+const GAME_H = 420;
+const START_BOX = { x: INTRO_W / 2 - 46, y: STAGE_H - 36, w: 92, h: 26 };
+const ROLL_BOX = { x: GAME_W / 2 - 74, y: 196, w: 148, h: 34 };
+const DEX_BOX = { x: GAME_W / 2 - 74, y: 242, w: 148, h: 30 };
+const SHOP_BOX = { x: GAME_W / 2 - 74, y: 284, w: 148, h: 30 };
+const BUY_LUCK = { x: GAME_W / 2 - 220, y: 200, w: 140, h: 32 };
+const BUY_SPEED = { x: GAME_W / 2 + 80, y: 200, w: 140, h: 32 };
+const BACK_BOX = { x: GAME_W / 2 - 52, y: GAME_H - 54, w: 104, h: 28 };
+const POTION_COST = 750;
+const SPEED_COST = 1500;
+const MEGA_COST = 5000;
+const POTION_MS = 5 * 60 * 1000;
+const BUY_MEGA = { x: GAME_W / 2 - 70, y: 318, w: 140, h: 32 };
+
+const saveKey = "test-your-luck-bestiary";
+let rolls = 0;
+let found = {};
+let money = 0;
+let potionUntil = 0;
+let speedUntil = 0;
+let megaLeft = 0;
+let rollPad = 0.06;
+let payoutShown = 0;
+let payoutUntil = 0;
+let shopOpen = false;
+try {
+  const saved = JSON.parse(localStorage.getItem(saveKey) || "{}");
+  rolls = saved.rolls || 0;
+  found = saved.found || {};
+  money = Math.max(0, saved.money || 0);
+  potionUntil = saved.potionUntil || 0;
+  speedUntil = saved.speedUntil || 0;
+  megaLeft = Math.max(0, saved.megaLeft || 0);
+} catch (error) {
+  rolls = 0;
+  found = {};
+}
+
+let mode = "intro";
+let introStart = 0;
+let introBegun = false;
+let landed = WORDS.map(() => false);
+let flash = 0;
+let startAlpha = 0;
+let introDone = false;
+let musicStarted = false;
+let heldStart = false;
+let heldName = null;
+let bestiaryOpen = false;
+let bestiaryScroll = 0;
+let spinning = false;
+let rollItems = [];
+let rollTimes = [];
+let rollStarted = 0;
+let rollIndex = -1;
+let showItem = null;
+let showZoom = 1;
+let showAlpha = 255;
+let landZoom = 1;
+let landZoomTarget = 1;
+let peaceReveal = 1;
+let peaceBurst = false;
+let lastResult = null;
+let particles = [];
+let loudness = 0;
+let starImages = [];
+let pointer = { x: 0, y: 0, down: false };
+
+const combo = new Audio("audio/combo.mp3");
+const songs = ["audio/song1.mp3", "audio/song2.mp3", "audio/song3.mp3"].map((src) => new Audio(src));
+let songIndex = -1;
+let currentAudio = null;
+let audioCtx = null;
+let analyser = null;
+let freq = null;
+
+function css(color, alpha = 1) {
+  return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
+}
+
+function store() {
+  localStorage.setItem(saveKey, JSON.stringify({ rolls, found, money, potionUntil, speedUntil, megaLeft }));
+}
+
+function luckNow() {
+  return Date.now() < potionUntil ? 2 : 1;
+}
+
+function speedNow() {
+  return Date.now() < speedUntil ? 2 : 1;
+}
+
+function pickRarity(boost = luckNow()) {
+  for (let index = 0; index < RARITIES.length - 1; index += 1) {
+    if (Math.random() < boost / RARITIES[index].oneIn) return RARITIES[index];
+  }
+  return RARITIES[RARITIES.length - 1];
+}
+
+function moneyText(amount) {
+  return `$${amount.toLocaleString("en-US")}`;
+}
+
+function potionClock(ms) {
+  const whole = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}
+
+function buyLuck() {
+  if (money < POTION_COST) return;
+  money -= POTION_COST;
+  potionUntil = Math.max(Date.now(), potionUntil) + POTION_MS;
+  store();
+}
+
+function buySpeed() {
+  if (money < SPEED_COST) return;
+  money -= SPEED_COST;
+  speedUntil = Math.max(Date.now(), speedUntil) + POTION_MS;
+  store();
+}
+
+function buyMega() {
+  if (money < MEGA_COST) return;
+  money -= MEGA_COST;
+  megaLeft += 1;
+  store();
+}
+
+function inBox(box, x, y) {
+  return x >= box.x && y >= box.y && x < box.x + box.w && y < box.y + box.h;
+}
+
+function pointerPos(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) * (viewW / rect.width),
+    y: (event.clientY - rect.top) * (viewH / rect.height),
+  };
+}
+
+function ensureAudio() {
+  if (audioCtx) return;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new Ctx();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  freq = new Uint8Array(analyser.frequencyBinCount);
+  analyser.connect(audioCtx.destination);
+  [combo, ...songs].forEach((audio) => {
+    const source = audioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+  });
+}
+
+function level() {
+  if (!analyser) return 0;
+  analyser.getByteFrequencyData(freq);
+  let sum = 0;
+  for (let index = 0; index < freq.length; index += 1) sum += freq[index];
+  return Math.min(1, (sum / freq.length) / 150);
+}
+
+async function playCombo() {
+  ensureAudio();
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+  combo.currentTime = 0;
+  combo.volume = 1;
+  currentAudio = combo;
+  try { await combo.play(); } catch (error) { /* browser blocked autoplay */ }
+}
+
+function playNextSong() {
+  songIndex += 1;
+  if (songIndex >= songs.length) return;
+  const audio = songs[songIndex];
+  audio.currentTime = 0;
+  audio.volume = mode === "game" ? 0.3 : 1;
+  audio.onended = playNextSong;
+  currentAudio = audio;
+  audio.play();
+}
+
+function startPlaylist() {
+  if (musicStarted) return;
+  musicStarted = true;
+  combo.pause();
+  ensureAudio();
+  playNextSong();
+}
+
+function duckMusic() {
+  songs.forEach((audio) => { audio.volume = 0.3; });
+}
+
+function loadStars() {
+  const files = [
+    ["../stars/hand-drawn-star.png", 0.53],
+    ["../stars/egyptian.png", 1],
+    ["../stars/spiral.png", 1],
+  ];
+  files.forEach(([src, crop]) => {
+    const image = new Image();
+    image.onload = () => {
+      const height = Math.max(1, Math.floor(image.height * crop));
+      const board = document.createElement("canvas");
+      board.width = image.width;
+      board.height = height;
+      const pen = board.getContext("2d");
+      pen.drawImage(image, 0, 0);
+      pen.globalCompositeOperation = "source-in";
+      pen.fillStyle = "rgb(255, 210, 42)";
+      pen.fillRect(0, 0, board.width, board.height);
+      starImages.push(board);
+    };
+    image.src = src;
+  });
+}
+
+function burst(rarity) {
+  const color = rarity.color;
+  const dots = rarity.id === "epic" ? 34 : 18;
+  for (let index = 0; index < dots; index += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3.2;
+    particles.push({
+      kind: "dot",
+      x: GAME_W / 2,
+      y: 130,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1.3,
+      life: 0.65 + Math.random() * 0.45,
+      color: color.map((channel) => Math.max(0, Math.min(255, channel + (Math.random() * 64 - 24)))),
+      r: 2 + Math.random() * 3,
+    });
+  }
+  if (rarity.id === "epic") {
+    for (let index = 0; index < 10; index += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 0.8 + Math.random() * 2.4;
+      particles.push({
+        kind: "star",
+        x: GAME_W / 2,
+        y: 130,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.1,
+        life: 0.8 + Math.random() * 0.45,
+        color: Math.random() < 0.7 ? color : [236, 214, 255],
+        r: 7 + Math.random() * 7,
+        rot: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.24,
+      });
+    }
+  }
+  if (rarity.id === "legendary" && starImages.length) {
+    for (let index = 0; index < 18; index += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 3.8;
+      particles.push({
+        kind: "doodle",
+        x: GAME_W / 2,
+        y: 130,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 1.6,
+        life: 1 + Math.random() * 0.45,
+        which: Math.floor(Math.random() * starImages.length),
+        scrib: performance.now(),
+        frame: Math.floor(Math.random() * 6),
+        size: 34 + Math.random() * 34,
+        rot: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+}
+
+function beginIntro() {
+  if (introBegun) return;
+  introBegun = true;
+  introStart = performance.now();
+  playCombo();
+}
+
+function beginRoll() {
+  if (spinning || bestiaryOpen || shopOpen || mode !== "game") return;
+  let boost = luckNow();
+  if (megaLeft > 0) {
+    megaLeft -= 1;
+    boost = 100;
+    store();
+  }
+  const result = pickRarity(boost);
+  const count = 40;
+  rollItems = Array.from({ length: count - 1 }, () => pickRarity(boost));
+  rollItems.push(result);
+  rollTimes = [];
+  const pace = speedNow();
+  rollPad = 0.06 / pace;
+  let moment = 0.14 / pace;
+  for (let index = 0; index < count; index += 1) {
+    const along = index / (count - 1);
+    moment += (0.022 + (0.5 - 0.022) * (along ** 2.8)) / pace;
+    rollTimes.push(moment);
+  }
+  rollStarted = performance.now();
+  rollIndex = -1;
+  showItem = null;
+  showZoom = 1;
+  showAlpha = 255;
+  landZoom = 1;
+  landZoomTarget = 1;
+  peaceReveal = 1;
+  particles = [];
+  spinning = true;
+}
+
+function finishRoll() {
+  spinning = false;
+  const result = rollItems[rollItems.length - 1];
+  lastResult = result;
+  rolls += 1;
+  money += result.oneIn;
+  payoutShown = result.oneIn;
+  payoutUntil = performance.now() + 1400;
+  if (!found[result.id]) found[result.id] = { count: 0, first: rolls };
+  found[result.id].count += 1;
+  store();
+  if (result.id === "la peace") {
+    peaceReveal = 0;
+    peaceBurst = false;
+  } else {
+    burst(result);
+  }
+  landZoomTarget = result.id === "epic" ? 1.18 : result.id === "legendary" ? 1.36 : 1;
+}
+
+function enterGame() {
+  if (mode === "game" || !introDone) return;
+  mode = "game";
+  viewW = GAME_W;
+  viewH = GAME_H;
+  fitCanvas();
+  if (!musicStarted) startPlaylist();
+  duckMusic();
+}
+
+function buttonAt(x, y) {
+  if (mode === "intro") return inBox(START_BOX, x, y) && introDone ? "start" : null;
+  if (bestiaryOpen || shopOpen) {
+    if (shopOpen && inBox(BUY_LUCK, x, y)) return "buy";
+    if (shopOpen && inBox(BUY_SPEED, x, y)) return "buy-speed";
+    if (shopOpen && inBox(BUY_MEGA, x, y)) return "buy-mega";
+    return inBox(BACK_BOX, x, y) ? "back" : null;
+  }
+  if (inBox(ROLL_BOX, x, y)) return "roll";
+  if (inBox(DEX_BOX, x, y)) return "bestiary";
+  if (inBox(SHOP_BOX, x, y)) return "shop";
+  return null;
+}
+
+function roundButton(box, label, held, font) {
+  ctx.beginPath();
+  ctx.roundRect(box.x, box.y, box.w, box.h, 6);
+  ctx.fillStyle = held ? "#969696" : "#ffffff";
+  ctx.strokeStyle = "#000";
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#000";
+  ctx.font = font;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, box.x + box.w / 2, box.y + box.h / 2);
+}
+
+const PHOTO_SETS = 5;
+function photoSet(id) {
+  let total = 0;
+  for (const char of id) total += char.codePointAt(0);
+  return `set-${(total % PHOTO_SETS) + 1}`;
+}
+
+const photos = {};
+RARITIES.forEach((rarity) => {
+  const image = new Image();
+  image.src = `../photos/${photoSet(rarity.id)}/${encodeURIComponent(rarity.id)}.jpg`;
+  photos[rarity.id] = image;
+});
+
+function paintPhoto(rarity, x, y, size) {
+  const photo = photos[rarity.id];
+  if (!photo || !photo.complete || !photo.naturalWidth) return false;
+  const side = Math.min(photo.naturalWidth, photo.naturalHeight);
+  const sx = (photo.naturalWidth - side) / 2;
+  const sy = (photo.naturalHeight - side) / 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, size, size, size * 0.1);
+  ctx.clip();
+  ctx.drawImage(photo, sx, sy, side, side, x, y, size, size);
+  ctx.restore();
+  return true;
+}
+
+function paintNamed(rarity, scale, alpha) {
+  ctx.save();
+  ctx.translate(GAME_W / 2, 118);
+  ctx.scale(scale, scale);
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  const hasPhoto = paintPhoto(rarity, -48, -106, 96);
+  const nameY = hasPhoto ? 14 : 0;
+  ctx.fillStyle = css(rarity.color);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "46px Arial";
+  ctx.fillText(rarity.name, 0, nameY);
+  ctx.font = "22px Arial";
+  ctx.fillText(rarity.odds, 0, nameY + 44);
+  ctx.restore();
+}
+
+function starPath(x, y, radius, rot) {
+  ctx.beginPath();
+  for (let index = 0; index < 10; index += 1) {
+    const angle = rot + index * Math.PI / 5 - Math.PI / 2;
+    const arm = index % 2 === 0 ? radius : radius * 0.42;
+    const px = x + Math.cos(angle) * arm;
+    const py = y + Math.sin(angle) * arm;
+    if (index === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+function drawDoodle(bit) {
+  const image = starImages[bit.which];
+  if (!image) return;
+  const slices = 8;
+  const sliceH = image.height / slices;
+  const drawH = bit.size / slices;
+  ctx.save();
+  ctx.translate(bit.x, bit.y);
+  ctx.rotate(bit.rot);
+  ctx.globalAlpha = Math.max(0, bit.life);
+  for (let index = 0; index < slices; index += 1) {
+    const wobble = Math.sin(index * 1.4 + bit.frame) * 3.2;
+    ctx.drawImage(
+      image,
+      0, sliceH * index, image.width, sliceH + 1,
+      -bit.size / 2 + wobble, -bit.size / 2 + index * drawH, bit.size, drawH + 1,
+    );
+  }
+  ctx.restore();
+}
+
+const barHistory = Array.from({ length: 60 }, () => 0.04);
+let barClock = 0;
+
+function paintBars() {
+  const count = 60;
+  const slot = canvas.width / count;
+  const bottom = canvas.height - 1;
+  const maxH = 86;
+  for (let index = 0; index < count; index += 1) {
+    const sample = barHistory[index];
+    const height = Math.max(4, maxH * (0.05 + 0.95 * sample));
+    const x = index * slot;
+    const y = bottom - height;
+    const alpha = (32 + 36 * sample) / 255;
+    const barW = Math.max(2, slot - 1);
+    ctx.fillStyle = `rgba(206, 142, 36, ${alpha})`;
+    ctx.fillRect(x, y, barW, height);
+    ctx.fillStyle = `rgba(238, 198, 96, ${Math.min(1, alpha + 18 / 255)})`;
+    ctx.fillRect(x, y, barW, 2);
+  }
+}
+
+function paintWords(now) {
+  const zoom = 1 + 0.2 * loudness;
+  ctx.save();
+  ctx.translate(INTRO_W / 2, STAGE_H / 2);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-INTRO_W / 2, -STAGE_H / 2);
+  WORDS.forEach((word, index) => {
+    const start = Math.max(0, BEATS[index] - word.ms);
+    if (now < start) return;
+    const t = Math.min(1, (now - start) / word.ms);
+    const eased = 1 - (1 - t) ** 3;
+    const y = (word.y - word.drop) + word.drop * eased;
+    const from = word.scale || 1;
+    const scale = from + (1 - from) * eased;
+    if (t === 1 && !landed[index]) {
+      landed[index] = true;
+      flash = Math.max(flash, word.big ? 220 : 96);
+    }
+    ctx.save();
+    ctx.translate(word.x, y);
+    ctx.rotate(word.angle * Math.PI / 180);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = word.color;
+    ctx.font = `${word.bold ? "bold " : ""}${word.size}px "Comic Sans MS", "Comic Sans", cursive`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(word.text, 0, 0);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+function paintIntro(now) {
+  ctx.fillStyle = "#141414";
+  ctx.fillRect(0, 0, INTRO_W, INTRO_H);
+  if (introBegun) paintWords(now - introStart);
+  paintBars();
+  if (startAlpha > 0) {
+    ctx.globalAlpha = startAlpha / 255;
+    roundButton(START_BOX, "start", heldStart, "12px Arial");
+    ctx.globalAlpha = 1;
+  }
+  if (flash > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${flash / 255})`;
+    ctx.fillRect(0, 0, INTRO_W, INTRO_H);
+  }
+}
+
+function paintRoll() {
+  if (spinning && rollIndex < 0 && lastResult) {
+    const elapsed = (performance.now() - rollStarted) / 1000;
+    paintNamed(lastResult, 1, Math.max(0, 1 - elapsed / 0.14));
+    return;
+  }
+  const shown = spinning && showItem ? showItem : lastResult;
+  const scale = showZoom * (spinning ? 1 : landZoom);
+  const alpha = (spinning ? showAlpha : 255) / 255;
+  if (!shown) {
+    ctx.fillStyle = "#dcdcdc";
+    ctx.font = "46px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("roll", GAME_W / 2, 136);
+    return;
+  }
+  const face = shown.id === "la peace" && (spinning || peaceReveal < 1) ? DIAMOND : shown;
+  if (shown.id === "la peace" && !spinning) {
+    paintNamed(DIAMOND, scale, alpha * (1 - peaceReveal));
+    paintNamed(shown, scale, alpha * peaceReveal);
+    return;
+  }
+  paintNamed(face, scale, alpha);
+}
+
+function paintNamed(rarity, scale, alpha) {
+  ctx.save();
+  ctx.translate(GAME_W / 2, 118);
+  ctx.scale(scale, scale);
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  const hasPhoto = paintPhoto(rarity, -48, -106, 96);
+  const nameY = hasPhoto ? 14 : 0;
+  ctx.fillStyle = css(rarity.color);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "46px Arial";
+  ctx.fillText(rarity.name, 0, nameY);
+  ctx.font = "22px Arial";
+  ctx.fillText(rarity.odds, 0, nameY + 44);
+  ctx.restore();
+}
+
+function paintParticles() {
+  particles.forEach((bit) => {
+    ctx.globalAlpha = Math.max(0, bit.life);
+    if (bit.kind === "dot") {
+      ctx.fillStyle = css(bit.color);
+      ctx.beginPath();
+      ctx.arc(bit.x, bit.y, bit.r, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (bit.kind === "star") {
+      ctx.fillStyle = css(bit.color);
+      starPath(bit.x, bit.y, bit.r, bit.rot);
+      ctx.fill();
+    } else {
+      drawDoodle(bit);
+    }
+    ctx.globalAlpha = 1;
+  });
+}
+
+function paintBestiary() {
+  ctx.fillStyle = "rgba(8, 8, 12, 0.92)";
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.fillStyle = "#fff";
+  ctx.font = "28px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("bestiary", GAME_W / 2, 36);
+  const rows = RARITIES.filter((rarity) => found[rarity.id] && found[rarity.id].count > 0);
+  if (!rows.length) {
+    ctx.fillStyle = "#b4b4b4";
+    ctx.font = "16px Arial";
+    ctx.fillText("nothing yet", GAME_W / 2, 150);
+  }
+  const viewTop = 68;
+  const viewH = GAME_H - 132;
+  const rowH = 48;
+  const maxScroll = Math.max(0, rows.length * rowH - viewH);
+  bestiaryScroll = Math.max(0, Math.min(bestiaryScroll, maxScroll));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, viewTop, GAME_W, viewH);
+  ctx.clip();
+  rows.forEach((rarity, index) => {
+    const y = viewTop + index * rowH - bestiaryScroll;
+    const slot = found[rarity.id];
+    paintPhoto(rarity, 40, y + 6, 34);
+    ctx.textAlign = "left";
+    ctx.font = "16px Arial";
+    ctx.fillStyle = css(rarity.color);
+    ctx.fillText(rarity.name, 88, y + 14);
+    ctx.textAlign = "right";
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "#d2d2d2";
+    ctx.fillText(rarity.odds, GAME_W - 88, y + 14);
+    ctx.textAlign = "left";
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "#c8c8c8";
+    ctx.fillText(`earliest roll ${slot.first}`, 88, y + 34);
+    ctx.textAlign = "right";
+    ctx.fillText(`got ${slot.count}`, GAME_W - 88, y + 34);
+  });
+  ctx.restore();
+  roundButton(BACK_BOX, "back", heldName === "back", "14px Arial");
+}
+
+function paintShop() {
+  ctx.fillStyle = "#101012";
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "28px Arial";
+  ctx.fillText("shop", GAME_W / 2, 36);
+  ctx.fillStyle = "#2de65f";
+  ctx.font = "22px Arial";
+  ctx.fillText(moneyText(money), GAME_W / 2, 72);
+  const luckX = GAME_W / 2 - 150;
+  const speedX = GAME_W / 2 + 150;
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "#ffc440";
+  ctx.fillText("2x luck", luckX, 118);
+  ctx.fillStyle = "#78d2ff";
+  ctx.fillText("2x speed", speedX, 118);
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#dcdcdc";
+  ctx.fillText("5 min", luckX, 150);
+  ctx.fillText("5 min", speedX, 150);
+  ctx.fillStyle = "#2de65f";
+  ctx.fillText("$750", luckX, 176);
+  ctx.fillStyle = "#78d2ff";
+  ctx.fillText("$1500", speedX, 176);
+  ctx.font = "22px Arial";
+  ctx.fillStyle = "#ffc440";
+  ctx.fillText("100x luck", GAME_W / 2, 258);
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#dcdcdc";
+  ctx.fillText("next roll", GAME_W / 2, 286);
+  ctx.fillStyle = "#ffc440";
+  ctx.fillText("$5000", GAME_W / 2, 308);
+  roundButton(BUY_LUCK, "buy", heldName === "buy" || money < POTION_COST, "16px Arial");
+  roundButton(BUY_SPEED, "buy", heldName === "buy-speed" || money < SPEED_COST, "16px Arial");
+  roundButton(BUY_MEGA, "buy", heldName === "buy-mega" || money < MEGA_COST, "16px Arial");
+  roundButton(BACK_BOX, "back", heldName === "back", "14px Arial");
+}
+
+function paintLuckTimer() {
+  const now = Date.now();
+  const chips = [];
+  if (speedUntil > now) chips.push({ label: `2x  ${potionClock(speedUntil - now)}`, color: "#78d2ff" });
+  if (potionUntil > now) chips.push({ label: `2x  ${potionClock(potionUntil - now)}`, color: "#2de65f" });
+  if (megaLeft > 0) chips.push({ label: megaLeft === 1 ? "100x next" : `100x x${megaLeft}`, color: "#ffc440" });
+  ctx.font = "16px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const height = 26;
+  chips.forEach((chip, index) => {
+    const width = ctx.measureText(chip.label).width + 16;
+    const x = GAME_W - 12 - width;
+    const y = GAME_H - 14 - height - index * (height + 6);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 6);
+    ctx.fill();
+    ctx.fillStyle = chip.color;
+    ctx.fillText(chip.label, x + width / 2, y + height / 2);
+  });
+}
+
+function paintGame() {
+  ctx.fillStyle = "#101012";
+  ctx.fillRect(0, 0, GAME_W, GAME_H);
+  ctx.fillStyle = "#dcdcdc";
+  ctx.font = "14px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`rolls ${rolls}`, 24, 22);
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#2de65f";
+  ctx.fillText(moneyText(money), GAME_W - 24, 22);
+  if (performance.now() < payoutUntil) {
+    ctx.font = "12px Arial";
+    ctx.fillText(`+${moneyText(payoutShown)}`, GAME_W - 24, 42);
+  }
+  paintRoll();
+  paintBars();
+  paintParticles();
+  if (!bestiaryOpen && !shopOpen) {
+    roundButton(ROLL_BOX, spinning ? "rolling" : "roll", heldName === "roll" || spinning, "16px Arial");
+    roundButton(DEX_BOX, "bestiary", heldName === "bestiary", "14px Arial");
+    roundButton(SHOP_BOX, "shop", heldName === "shop", "14px Arial");
+  } else if (bestiaryOpen) {
+    paintBestiary();
+  } else {
+    paintShop();
+  }
+  paintLuckTimer();
+}
+
+let last = performance.now();
+let wordsDoneAt = 0;
+let prevHeard = 0;
+let flashCool = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  const heard = level();
+  loudness += (heard > loudness ? 0.5 : 0.14) * (heard - loudness);
+  barClock += dt * 1000;
+  if (barClock >= 28) {
+    barClock = 0;
+    barHistory.shift();
+    barHistory.push(Math.max(0.04, heard));
+  }
+  if (mode === "intro" && heard > 0.62 && heard - prevHeard > 0.16 && flashCool <= 0) {
+    flash = Math.max(flash, 70);
+    flashCool = 8;
+  }
+  flashCool = Math.max(0, flashCool - dt * 60);
+  prevHeard = heard;
+
+  if (mode === "intro") {
+    const elapsed = introBegun ? now - introStart : 0;
+    if (introBegun && landed.every(Boolean)) {
+      if (!wordsDoneAt) wordsDoneAt = now + 280;
+      if (now >= wordsDoneAt) {
+        startAlpha = Math.min(255, startAlpha + dt * 875);
+        if (startAlpha >= 255) {
+          introDone = true;
+          if (!musicStarted) startPlaylist();
+        }
+      }
+    }
+    flash = Math.max(0, flash - dt * 1100);
+    paintIntro(elapsed);
+  } else {
+    if (spinning) {
+      const elapsed = (now - rollStarted) / 1000;
+      while (rollIndex + 1 < rollItems.length && elapsed >= rollTimes[rollIndex + 1]) {
+        rollIndex += 1;
+        showItem = rollItems[rollIndex];
+        showZoom = 1.07;
+        showAlpha = 60;
+      }
+      if (rollIndex >= rollItems.length - 1 && elapsed >= rollTimes[rollTimes.length - 1] + rollPad) finishRoll();
+    }
+    showZoom += (1 - showZoom) * Math.min(1, dt * 26);
+    showAlpha = Math.min(255, showAlpha + dt * 3000);
+    landZoom += (landZoomTarget - landZoom) * Math.min(1, dt * 9);
+    if (!spinning && lastResult && lastResult.id === "la peace" && peaceReveal < 1) {
+      peaceReveal = Math.min(1, peaceReveal + dt * 1.1);
+      if (peaceReveal > 0.45 && !peaceBurst) {
+        peaceBurst = true;
+        burst(lastResult);
+      }
+    }
+    particles.forEach((bit) => {
+      bit.x += bit.vx;
+      bit.y += bit.vy;
+      bit.vy += 0.035;
+      bit.life -= dt;
+      if (bit.kind === "star") bit.rot += bit.spin;
+      if (bit.kind === "doodle" && now - bit.scrib >= 100) {
+        bit.frame += 1;
+        bit.scrib = now;
+      }
+    });
+    particles = particles.filter((bit) => bit.life > 0);
+    paintGame();
+  }
+  requestAnimationFrame(frame);
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  if (!introBegun) beginIntro();
+  const pos = pointerPos(event);
+  pointer = { ...pos, down: true };
+  const name = buttonAt(pos.x, pos.y);
+  if (name === "start") heldStart = true;
+  else heldName = name;
+});
+
+canvas.addEventListener("pointerup", (event) => {
+  const pos = pointerPos(event);
+  const name = buttonAt(pos.x, pos.y);
+  if (heldStart && name === "start") enterGame();
+  if (heldName && name === heldName) {
+    if (name === "roll") beginRoll();
+    if (name === "bestiary") {
+      bestiaryOpen = true;
+      shopOpen = false;
+      bestiaryScroll = 0;
+    }
+    if (name === "shop") {
+      shopOpen = true;
+      bestiaryOpen = false;
+    }
+    if (name === "buy") buyLuck();
+    if (name === "buy-speed") buySpeed();
+    if (name === "buy-mega") buyMega();
+    if (name === "back") {
+      bestiaryOpen = false;
+      shopOpen = false;
+    }
+  }
+  heldStart = false;
+  heldName = null;
+  pointer.down = false;
+});
+
+canvas.addEventListener("wheel", (event) => {
+  if (mode === "game" && bestiaryOpen) {
+    bestiaryScroll = Math.max(0, bestiaryScroll + event.deltaY * 0.4);
+    event.preventDefault();
+  }
+}, { passive: false });
+
+loadStars();
+fitCanvas();
+window.addEventListener("resize", fitCanvas);
+beginIntro();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
