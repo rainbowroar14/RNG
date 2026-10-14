@@ -2545,7 +2545,7 @@ def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int, cent
 
 def fan_spots(count: int) -> list[tuple[int, float]]:
     if count == 2:
-        return [(GAME_W // 2 - 155, 0.55), (GAME_W // 2 + 155, 0.55)]
+        return [(GAME_W // 2 - 105, 1.0), (GAME_W // 2 + 105, 1.0)]
     if count == 3:
         return [(GAME_W // 2 - 200, 0.46), (GAME_W // 2, 0.46), (GAME_W // 2 + 200, 0.46)]
     gap = 150
