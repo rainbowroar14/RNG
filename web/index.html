@@ -2294,16 +2294,16 @@ function paintNamed(rarity, scale, alpha, centerX = GAME_W / 2, showNew = false)
   if (showNew && freshIds.has(rarity.id)) {
     const bob = 1 + 0.1 * Math.sin(performance.now() / 160);
     ctx.save();
-    ctx.translate(hasPhoto ? -34 : -78, hasPhoto ? -92 : nameY - 38);
+    ctx.translate(hasPhoto ? -16 : -72, hasPhoto ? -78 : nameY - 34);
     ctx.rotate(-0.32);
     ctx.scale(bob, bob);
-    ctx.font = "bold 20px Arial";
+    ctx.font = "bold 13px Arial";
     ctx.lineJoin = "round";
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 2;
     ctx.strokeStyle = "#000";
     ctx.fillStyle = "#ffe132";
-    ctx.strokeText("NEW", 0, 0);
-    ctx.fillText("NEW", 0, 0);
+    ctx.strokeText("New", 0, 0);
+    ctx.fillText("New", 0, 0);
     ctx.restore();
   }
   ctx.restore();
@@ -2425,7 +2425,7 @@ function paintShop() {
   ctx.fillText("autoclicker", luckX, 292);
   ctx.font = "16px Arial";
   ctx.fillStyle = "#dcdcdc";
-  ctx.fillText("$3 a roll", luckX, 310);
+  ctx.fillText(`${moneyText(AUTO_COST)} · $3 a roll`, luckX, 310);
   ctx.font = "22px Arial";
   ctx.fillStyle = "#5aaaff";
   ctx.fillText("roll 2x", speedX, 292);

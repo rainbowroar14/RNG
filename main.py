@@ -1194,7 +1194,7 @@ FONT_16 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 16)
 FONT_22 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 22)
 FONT_28 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 28)
 FONT_46 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 46)
-FONT_NEW = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 18)
+FONT_NEW = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 12)
 FONT_COMIC = ImageFont.truetype(r"C:\Windows\Fonts\comic.ttf", 28)
 FONT_COMIC_SM = ImageFont.truetype(r"C:\Windows\Fonts\comic.ttf", 14)
 STAR_DIR = Path(__file__).with_name("stars")
@@ -2481,25 +2481,25 @@ def paint_new(frame: Image.Image, rarity: dict, scale: float, alpha: int, center
     if rarity["id"] not in fresh_ids or alpha <= 0 or scale <= 0:
         return
     bob = 1.0 + 0.1 * math.sin(time.perf_counter() * 6.4)
-    box = FONT_NEW.getbbox("NEW")
-    pad = 5
+    box = FONT_NEW.getbbox("New")
+    pad = 3
     width = box[2] - box[0] + pad * 2
     height = box[3] - box[1] + pad * 2
     plate = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     ImageDraw.Draw(plate).text(
         (pad - box[0], pad - box[1]),
-        "NEW",
+        "New",
         font=FONT_NEW,
         fill=(255, 225, 50, alpha),
-        stroke_width=3,
+        stroke_width=2,
         stroke_fill=(0, 0, 0, alpha),
     )
     plate = plate.rotate(18, expand=True, resample=Image.Resampling.BICUBIC)
     fit = scale * bob
     plate = plate.resize((max(1, int(plate.width * fit)), max(1, int(plate.height * fit))), Image.Resampling.BILINEAR)
     if has_photo:
-        left = center_x - 46 * scale
-        top = 58 - 50 * scale
+        left = center_x - 30 * scale
+        top = 58 - 34 * scale
     else:
         left = center_x - 86 * scale
         top = name_y - 42 * scale
@@ -2661,7 +2661,7 @@ def paint_shop(frame: Image.Image) -> None:
     pen.text((speed_x, 214), CLOVER_NOTE[leaf], font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
     pen.text((speed_x, 230), "owned" if owned else money_text(CLOVER_COST[clover_tier]), font=FONT_16, fill=(48, 180, 72, 255), anchor="mm")
     pen.text((luck_x, 292), "autoclicker", font=FONT_22, fill=(255, 140, 80, 255), anchor="mm")
-    pen.text((luck_x, 310), "$3 a roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((luck_x, 310), f"{money_text(AUTO_COST)} · $3 a roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
     pen.text((speed_x, 292), "roll 2x", font=FONT_22, fill=(90, 170, 255, 255), anchor="mm")
     pen.text((speed_x, 310), "2 at once" if roll_2x else money_text(ROLL2_COST), font=FONT_16, fill=(90, 170, 255, 255), anchor="mm")
     paint_ui_button(frame, BUY_LUCK_BOX, "buy", held_name == "buy" or money < POTION_COST, FONT_16)
