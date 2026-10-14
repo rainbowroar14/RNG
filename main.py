@@ -277,6 +277,10 @@ RARITIES = (
     {"id": "insane lucky", "name": "insane lucky", "one_in": 17777, "rarity": 17777, "odds": "17,777", "color": (255, 196, 48)},
     {"id": "godly lucky", "name": "godly lucky", "one_in": 37777, "rarity": 37777, "odds": "37,777", "color": (255, 140, 40)},
     {"id": "max lucky", "name": "max lucky", "one_in": 77777, "rarity": 77777, "odds": "77,777", "color": (255, 230, 120)},
+    {"id": "double roll", "name": "double roll", "one_in": 25, "rarity": 25, "odds": "25", "color": (90, 170, 255)},
+    {"id": "payday", "name": "payday", "one_in": 100, "rarity": 100, "odds": "100", "color": (48, 200, 80)},
+    {"id": "unlucky", "name": "unlucky", "one_in": 100, "rarity": 100, "odds": "100", "color": (140, 90, 160)},
+    {"id": "super unlucky", "name": "super unlucky", "one_in": 1000, "rarity": 1000, "odds": "1,000", "color": (190, 48, 58)},
     {"id": "1", "name": "1", "one_in": 1, "rarity": 1, "odds": "1", "color": (210, 220, 235)},
     {"id": "normal", "name": "normal", "one_in": 2, "odds": "1 in 2", "color": (226, 226, 226)},
     {"id": "🐉", "name": "🐉", "one_in": 1600, "rarity": 1600, "odds": "1,600", "color": (233, 193, 143)},
@@ -1228,6 +1232,7 @@ play_alpha = 255
 intro_done = True
 intro_fading = False
 music_started = False
+music_muted = False
 playlist: list[Path] = []
 track_index = -1
 heard_track = False
@@ -1280,7 +1285,9 @@ roll_over = 0.26
 roll_back = 0.42
 roll_ready = 0.0
 next_multi = 1
-NEXT_MULTI = {"lucky": 2, "super lucky": 3, "ultra lucky": 5, "mega lucky": 10, "hyper lucky": 25, "insane lucky": 100, "godly lucky": 250, "max lucky": 1000}
+roll_boost = 1.0
+pair_result = None
+NEXT_MULTI = {"lucky": 2, "super lucky": 3, "ultra lucky": 5, "mega lucky": 10, "hyper lucky": 25, "insane lucky": 100, "godly lucky": 250, "max lucky": 1000, "unlucky": 0.5, "super unlucky": 0.2}
 STRIP_TILE = 188
 payout_shown = 0
 payout_until = 0.0
@@ -1309,6 +1316,7 @@ SHOP_BOX = (GAME_W // 2 - 74, 284, 148, 30)
 BOARD_BOX = (GAME_W // 2 - 74, 326, 148, 30)
 NAME_BOX = (12, 44, 150, 24)
 RESET_BOX = (12, GAME_H - 34, 64, 22)
+MUTE_BOX = (12, GAME_H - 62, 64, 22)
 BUY_LUCK_BOX = (GAME_W // 2 - 220, 148, 140, 28)
 BUY_SPEED_BOX = (GAME_W // 2 + 80, 148, 140, 28)
 BUY_MEGA_BOX = (GAME_W // 2 - 220, 244, 140, 28)
@@ -1607,6 +1615,8 @@ def spin_wheel() -> dict:
 def luck_spins(boost: float) -> int:
     clover = CLOVER_LUCK[min(len(CLOVER_LUCK) - 1, max(0, clover_tier))]
     scaled = (float(boost) + buff_count) * clover * (1 + 0.05 * super_buff_count)
+    if scaled < 1:
+        return -max(2, round(1 / scaled)) if scaled > 0 else -5
     spins = int(scaled)
     if random.random() < scaled - spins:
         spins += 1
@@ -1653,11 +1663,19 @@ def gambler_name() -> str | None:
     return None
 
 
-def pick_rarity(boost: int | None = None) -> dict:
+def pick_rarity(boost: float | None = None) -> dict:
     if boost is None:
         boost = luck_now()
+    spins = luck_spins(boost)
+    if spins < 0:
+        worst = spin_wheel()
+        for _ in range(-spins - 1):
+            rolled = spin_wheel()
+            if rolled["rarity"] < worst["rarity"]:
+                worst = rolled
+        return worst
     best = spin_wheel()
-    for _ in range(luck_spins(boost) - 1):
+    for _ in range(spins - 1):
         rolled = spin_wheel()
         if rolled["rarity"] > best["rarity"]:
             best = rolled
@@ -1911,7 +1929,7 @@ def tap_reset() -> None:
     global reset_taps, money, roll_count, found, potion_until, speed_until, mega_left
     global clover_tier, autoclicker_owned, autoclicker_on, next_multi, spinning, pending_result
     global last_result, show_item, payout_until, roll_ready, land_zoom, land_zoom_target, peace_reveal
-    global username, best_id, best_rarity, buff_count, super_buff_count
+    global username, best_id, best_rarity, buff_count, super_buff_count, pair_result
     reset_taps += 1
     if reset_taps < 10:
         return
@@ -1928,6 +1946,7 @@ def tap_reset() -> None:
     spinning = False
     pending_result = None
     last_result = None
+    pair_result = None
     show_item = None
     payout_until = 0
     roll_ready = 0
@@ -2083,7 +2102,15 @@ def load_stars() -> None:
 
 def duck_music() -> None:
     if playing_alias == "track":
-        mci_cmd(f"setaudio track volume to {120 if mode == 'game' else 400}")
+        mci_cmd(f"setaudio track volume to {0 if music_muted else (120 if mode == 'game' else 400)}")
+    if playing_alias == "hit":
+        mci_cmd(f"setaudio hit volume to {0 if music_muted else 1000}")
+
+
+def toggle_mute() -> None:
+    global music_muted
+    music_muted = not music_muted
+    duck_music()
 
 
 def play_tick() -> None:
@@ -2108,7 +2135,7 @@ def enter_game() -> None:
 def begin_roll(auto: bool = False) -> None:
     global spinning, pending_result, roll_items, roll_times, roll_started, roll_i
     global show_zoom, show_alpha, land_zoom, land_zoom_target, peace_reveal, roll_pad, mega_left
-    global next_multi, money
+    global next_multi, money, roll_boost, pair_result
     if spinning or bestiary_open or shop_open or time.perf_counter() < roll_ready:
         return
     if auto:
@@ -2121,7 +2148,9 @@ def begin_roll(auto: bool = False) -> None:
         boost = 100
         store_progress()
     boost *= next_multi
+    roll_boost = boost
     next_multi = 1
+    pair_result = None
     pending_result = pick_rarity(boost)
     count = 40
     roll_items = [pick_rarity(boost) for _ in range(count - 2)]
@@ -2206,9 +2235,29 @@ def spawn_burst(rarity: dict) -> None:
             )
 
 
+def take_result(result: dict) -> int:
+    global money, buff_count, super_buff_count, best_id, best_rarity, next_multi
+    pay = 5000 if result["id"] == "payday" else int(result["rarity"])
+    money += pay
+    slot = found.get(result["id"])
+    if slot is None:
+        found[result["id"]] = {"count": 1, "first": roll_count}
+    else:
+        slot["count"] = int(slot.get("count", 0)) + 1
+    if result["id"] == "buff":
+        buff_count += 1
+    elif result["id"] == "super buff":
+        super_buff_count += 1
+    if int(result["rarity"]) > best_rarity:
+        best_rarity = int(result["rarity"])
+        best_id = result["id"]
+    next_multi *= NEXT_MULTI.get(result["id"], 1)
+    return pay
+
+
 def finish_roll() -> None:
     global spinning, last_result, roll_count, land_zoom_target, peace_reveal, peace_burst
-    global money, payout_shown, payout_until, next_multi, roll_ready, best_id, best_rarity, buff_count, super_buff_count
+    global payout_shown, payout_until, roll_ready, pair_result
     if pending_result is None:
         spinning = False
         return
@@ -2216,26 +2265,20 @@ def finish_roll() -> None:
     roll_ready = time.perf_counter() + 0.5
     last_result = pending_result
     roll_count += 1
-    money += int(pending_result["rarity"])
-    payout_shown = int(pending_result["rarity"])
+    paid_best = best_rarity
+    pay = take_result(pending_result)
+    pair_result = None
+    if pending_result["id"] == "double roll":
+        left = pick_rarity(roll_boost)
+        right = pick_rarity(roll_boost)
+        pair_result = (left, right)
+        pay += take_result(left)
+        pay += take_result(right)
+    payout_shown = pay
     payout_until = time.perf_counter() + 1.4
-    slot = found.get(pending_result["id"])
-    if slot is None:
-        found[pending_result["id"]] = {"count": 1, "first": roll_count}
-    else:
-        slot["count"] = int(slot.get("count", 0)) + 1
-    if pending_result["id"] == "buff":
-        buff_count += 1
-    elif pending_result["id"] == "super buff":
-        super_buff_count += 1
-    if int(pending_result["rarity"]) > best_rarity:
-        best_rarity = int(pending_result["rarity"])
-        best_id = pending_result["id"]
-        store_progress()
+    store_progress()
+    if best_rarity > paid_best:
         push_best()
-    else:
-        store_progress()
-    next_multi *= NEXT_MULTI.get(pending_result["id"], 1)
     if pending_result["id"] == "la peace":
         peace_reveal = 0.0
         peace_burst = False
@@ -2318,6 +2361,8 @@ def game_button_at(x: int, y: int) -> str | None:
         return "board"
     if point_in(NAME_BOX, x, y):
         return "name"
+    if point_in(MUTE_BOX, x, y):
+        return "mute"
     if point_in(RESET_BOX, x, y):
         return "reset"
     return None
@@ -2398,7 +2443,7 @@ def shown_odds(rarity: dict, hovered: bool) -> str:
     return rarity["chance"] if hovered else rarity["odds"]
 
 
-def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int) -> None:
+def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int, center_x: int = GAME_W // 2) -> None:
     name_y = 118
     picture = photos.get(rarity["id"])
     if picture is not None and alpha > 0 and scale > 0:
@@ -2407,12 +2452,20 @@ def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int) -> N
         if alpha < 250:
             shot = shot.copy()
             shot.putalpha(shot.getchannel("A").point(lambda value, fade=alpha: value * fade // 255))
-        frame.paste(shot, (int(GAME_W / 2 - size / 2), int(58 - size / 2)), shot)
+        frame.paste(shot, (int(center_x - size / 2), int(58 - size / 2)), shot)
         name_y = 132
-    paint_line(frame, rarity["name"], FONT_46, rarity["color"], GAME_W / 2, name_y, scale, alpha)
+    paint_line(frame, rarity["name"], FONT_46, rarity["color"], center_x, name_y, scale, alpha)
     odds_y = name_y + 44
-    label = shown_odds(rarity, hovering_center(GAME_W / 2, odds_y, rarity, FONT_22, scale))
-    paint_line(frame, label, FONT_22, rarity["color"], GAME_W / 2, odds_y, scale, alpha)
+    label = shown_odds(rarity, hovering_center(center_x, odds_y, rarity, FONT_22, scale))
+    paint_line(frame, label, FONT_22, rarity["color"], center_x, odds_y, scale, alpha)
+
+
+def paint_pair(frame: Image.Image, scale: float, alpha: int) -> None:
+    if not pair_result:
+        return
+    fit = scale * 0.55
+    paint_named(frame, pair_result[0], fit, alpha, GAME_W // 2 - 155)
+    paint_named(frame, pair_result[1], fit, alpha, GAME_W // 2 + 155)
 
 
 def paint_roll(frame: Image.Image) -> None:
@@ -2420,7 +2473,10 @@ def paint_roll(frame: Image.Image) -> None:
     scale = show_zoom * (1.0 if spinning else land_zoom)
     if spinning and roll_i < 0 and last_result is not None:
         fade = max(0, int(255 * (1 - elapsed / 0.14)))
-        paint_named(frame, last_result, 1, fade)
+        if pair_result and last_result["id"] == "double roll":
+            paint_pair(frame, 1, fade)
+        else:
+            paint_named(frame, last_result, 1, fade)
         return
     shown = show_item if spinning and show_item is not None else last_result
     if shown is None:
@@ -2433,6 +2489,9 @@ def paint_roll(frame: Image.Image) -> None:
     if shown["id"] == "la peace":
         paint_named(frame, diamond_face(), scale, int(alpha * (1 - peace_reveal)))
         paint_named(frame, shown, scale, int(alpha * peace_reveal))
+        return
+    if not spinning and pair_result and shown["id"] == "double roll":
+        paint_pair(frame, scale, alpha)
         return
     paint_named(frame, shown, scale, alpha)
 
@@ -2558,7 +2617,11 @@ def paint_luck_timer(frame: Image.Image) -> None:
         chips.append((label, (255, 196, 64, 255)))
     if next_multi > 1:
         stacked = (100 if mega_left else luck_now()) * next_multi
-        chips.append((f"{stacked}x next", (48, 220, 96, 255)))
+        chips.append((f"{stacked:g}x next", (48, 220, 96, 255)))
+    elif next_multi < 1:
+        parts = round(1 / next_multi) if next_multi else 0
+        label = f"1/{parts} next" if parts > 1 else f"{next_multi:g}x next"
+        chips.append((label, (200, 80, 112, 255)))
     if clover_tier > 0:
         chips.append((f"{CLOVER_NAME[clover_tier - 1]} {CLOVER_NOTE[clover_tier - 1]}", (48, 180, 72, 255)))
     if buff_count:
@@ -2600,6 +2663,7 @@ def compose_game(env: dict | None, pos: float | None) -> Image.Image:
         paint_ui_button(frame, SHOP_BOX, "shop", held_name == "shop", FONT_14)
         paint_ui_button(frame, BOARD_BOX, "board", held_name == "board", FONT_14)
         paint_ui_button(frame, NAME_BOX, username or "set name", held_name == "name", FONT_12)
+        paint_ui_button(frame, MUTE_BOX, "muted" if music_muted else "mute", held_name == "mute", FONT_12)
         reset_label = "reset" if reset_taps == 0 else f"{reset_taps}/10"
         paint_ui_button(frame, RESET_BOX, reset_label, held_name == "reset", FONT_12)
     if bestiary_open:
@@ -2713,6 +2777,8 @@ def on_release(event: tk.Event) -> None:
             pull_board()
         elif chosen == "name":
             ask_name()
+        elif chosen == "mute":
+            toggle_mute()
         elif chosen == "reset":
             tap_reset()
         elif chosen == "buy":

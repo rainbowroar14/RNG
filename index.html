@@ -298,6 +298,10 @@ const RARITIES = [
   { id: "insane lucky", name: "insane lucky", oneIn: 17777, rarity: 17777, odds: "17,777", color: [255, 196, 48] },
   { id: "godly lucky", name: "godly lucky", oneIn: 37777, rarity: 37777, odds: "37,777", color: [255, 140, 40] },
   { id: "max lucky", name: "max lucky", oneIn: 77777, rarity: 77777, odds: "77,777", color: [255, 230, 120] },
+  { id: "double roll", name: "double roll", oneIn: 25, rarity: 25, odds: "25", color: [90, 170, 255] },
+  { id: "payday", name: "payday", oneIn: 100, rarity: 100, odds: "100", color: [48, 200, 80] },
+  { id: "unlucky", name: "unlucky", oneIn: 100, rarity: 100, odds: "100", color: [140, 90, 160] },
+  { id: "super unlucky", name: "super unlucky", oneIn: 1000, rarity: 1000, odds: "1,000", color: [190, 48, 58] },
   { id: "1", name: "1", oneIn: 1, rarity: 1, odds: "1", color: [210, 220, 235] },
   { id: "normal", name: "normal", oneIn: 2, odds: "1 in 2", color: [226, 226, 226] },
   { id: "🐉", name: "🐉", oneIn: 1600, rarity: 1600, odds: "1,600", color: [233, 193, 143] },
@@ -1233,6 +1237,7 @@ const SHOP_BOX = { x: GAME_W / 2 - 74, y: 284, w: 148, h: 30 };
 const BOARD_BOX = { x: GAME_W / 2 - 74, y: 326, w: 148, h: 30 };
 const NAME_BOX = { x: 12, y: 44, w: 150, h: 24 };
 const RESET_BOX = { x: 12, y: GAME_H - 34, w: 64, h: 22 };
+const MUTE_BOX = { x: 12, y: GAME_H - 62, w: 64, h: 22 };
 const BUY_LUCK = { x: GAME_W / 2 - 220, y: 148, w: 140, h: 28 };
 const BUY_SPEED = { x: GAME_W / 2 + 80, y: 148, w: 140, h: 28 };
 const BUY_MEGA = { x: GAME_W / 2 - 220, y: 244, w: 140, h: 28 };
@@ -1267,7 +1272,9 @@ let rollBack = 0.42;
 let rollReady = 0;
 let stripCanvas = null;
 let nextMulti = 1;
-const NEXT_MULTI = { lucky: 2, "super lucky": 3, "ultra lucky": 5, "mega lucky": 10, "hyper lucky": 25, "insane lucky": 100, "godly lucky": 250, "max lucky": 1000 };
+let rollBoost = 1;
+let pairResult = null;
+const NEXT_MULTI = { lucky: 2, "super lucky": 3, "ultra lucky": 5, "mega lucky": 10, "hyper lucky": 25, "insane lucky": 100, "godly lucky": 250, "max lucky": 1000, unlucky: 0.5, "super unlucky": 0.2 };
 const STRIP_TILE = 188;
 let payoutShown = 0;
 let payoutUntil = 0;
@@ -1290,6 +1297,7 @@ let flash = 0;
 let startAlpha = 0;
 let introDone = true;
 let musicStarted = false;
+let musicMuted = false;
 let heldStart = false;
 let heldName = null;
 let bestiaryOpen = false;
@@ -1569,6 +1577,7 @@ function spinWheel() {
 function luckSpins(boost) {
   const clover = CLOVER_LUCK[Math.min(CLOVER_LUCK.length - 1, Math.max(0, cloverTier))];
   const scaled = (boost + buffCount) * clover * (1 + 0.05 * superBuffCount);
+  if (scaled < 1) return scaled > 0 ? -Math.max(2, Math.round(1 / scaled)) : -5;
   let spins = Math.floor(scaled);
   if (Math.random() < scaled - spins) spins += 1;
   return Math.max(1, spins);
@@ -1600,6 +1609,14 @@ function gamblerName() {
 
 function pickRarity(boost = luckNow()) {
   const spins = luckSpins(boost);
+  if (spins < 0) {
+    let worst = spinWheel();
+    for (let spin = 1; spin < -spins; spin += 1) {
+      const rolled = spinWheel();
+      if (rolled.rarity < worst.rarity) worst = rolled;
+    }
+    return worst;
+  }
   let best = spinWheel();
   for (let spin = 1; spin < spins; spin += 1) {
     const rolled = spinWheel();
@@ -1706,9 +1723,25 @@ function playTick() {
 function playCombo() {
   resumeAudio();
   try { combo.currentTime = 0; } catch (error) { /* not loaded yet */ }
-  combo.volume = 1;
+  combo.volume = musicMuted ? 0 : 1;
   currentAudio = combo;
   combo.play().catch(() => { /* browser blocked autoplay */ });
+}
+
+function musicLevel() {
+  if (musicMuted) return 0;
+  return mode === "game" ? 0.12 : 0.4;
+}
+
+function applyMusicVolume() {
+  const level = musicLevel();
+  songs.forEach((audio) => { audio.volume = level; });
+  combo.volume = musicMuted ? 0 : combo.volume;
+}
+
+function toggleMute() {
+  musicMuted = !musicMuted;
+  applyMusicVolume();
 }
 
 function playNextSong() {
@@ -1716,11 +1749,12 @@ function playNextSong() {
   const audio = songs[next];
   resumeAudio();
   try { audio.currentTime = 0; } catch (error) { /* not loaded yet */ }
-  audio.volume = mode === "game" ? 0.12 : 0.4;
+  audio.volume = musicLevel();
   audio.onended = playNextSong;
   currentAudio = audio;
   audio.play().then(() => {
     songIndex = next;
+    applyMusicVolume();
   }).catch(() => {
     musicStarted = false;
   });
@@ -1734,7 +1768,7 @@ function startPlaylist() {
 }
 
 function duckMusic() {
-  songs.forEach((audio) => { audio.volume = 0.12; });
+  applyMusicVolume();
 }
 
 function loadStars() {
@@ -1837,7 +1871,9 @@ function beginRoll(auto = false) {
     store();
   }
   boost *= nextMulti;
+  rollBoost = boost;
   nextMulti = 1;
+  pairResult = null;
   const result = pickRarity(boost);
   const count = 40;
   rollItems = Array.from({ length: count - 2 }, () => pickRarity(boost));
@@ -1863,15 +1899,9 @@ function beginRoll(auto = false) {
   spinning = true;
 }
 
-function finishRoll() {
-  spinning = false;
-  rollReady = performance.now() + 500;
-  const result = rollItems[rollItems.length - 1];
-  lastResult = result;
-  rolls += 1;
-  money += result.rarity;
-  payoutShown = result.rarity;
-  payoutUntil = performance.now() + 1400;
+function takeResult(result) {
+  const pay = result.id === "payday" ? 5000 : result.rarity;
+  money += pay;
   if (!found[result.id]) found[result.id] = { count: 0, first: rolls };
   found[result.id].count += 1;
   if (result.id === "buff") buffCount += 1;
@@ -1879,12 +1909,32 @@ function finishRoll() {
   if (result.rarity > bestRarity) {
     bestRarity = result.rarity;
     bestId = result.id;
-    store();
-    pushBest();
-  } else {
-    store();
   }
   nextMulti *= NEXT_MULTI[result.id] || 1;
+  return pay;
+}
+
+function finishRoll() {
+  spinning = false;
+  rollReady = performance.now() + 500;
+  const result = rollItems[rollItems.length - 1];
+  lastResult = result;
+  rolls += 1;
+  const paidBest = bestRarity;
+  let pay = takeResult(result);
+  pairResult = null;
+  if (result.id === "double roll") {
+    const left = pickRarity(rollBoost);
+    const right = pickRarity(rollBoost);
+    pairResult = [left, right];
+    pay += takeResult(left);
+    pay += takeResult(right);
+  }
+  payoutShown = pay;
+  payoutUntil = performance.now() + 1400;
+  const bestChanged = bestRarity > paidBest;
+  store();
+  if (bestChanged) pushBest();
   if (result.id === "la peace") {
     peaceReveal = 0;
     peaceBurst = false;
@@ -1920,6 +1970,7 @@ function tapReset() {
   spinning = false;
   rollItems = [];
   lastResult = null;
+  pairResult = null;
   showItem = null;
   payoutUntil = 0;
   rollReady = 0;
@@ -1952,6 +2003,7 @@ function buttonAt(x, y) {
   if (inBox(SHOP_BOX, x, y)) return "shop";
   if (inBox(BOARD_BOX, x, y)) return "board";
   if (inBox(NAME_BOX, x, y)) return "name";
+  if (inBox(MUTE_BOX, x, y)) return "mute";
   if (inBox(RESET_BOX, x, y)) return "reset";
   return null;
 }
@@ -2146,7 +2198,8 @@ function paintRoll() {
   const scale = showZoom * (spinning ? 1 : landZoom);
   const alpha = (spinning ? showAlpha : 255) / 255;
   if (spinning && rollIndex < 0 && lastResult) {
-    paintNamed(lastResult, 1, Math.max(0, 1 - elapsed / 0.14));
+    if (pairResult && lastResult.id === "double roll") paintPair(1, Math.max(0, 1 - elapsed / 0.14));
+    else paintNamed(lastResult, 1, Math.max(0, 1 - elapsed / 0.14));
     return;
   }
   const shown = spinning && showItem ? showItem : lastResult;
@@ -2167,12 +2220,22 @@ function paintRoll() {
     paintNamed(shown, scale, alpha * peaceReveal);
     return;
   }
+  if (!spinning && pairResult && shown.id === "double roll") {
+    paintPair(scale, alpha);
+    return;
+  }
   paintNamed(shown, scale, alpha);
 }
 
-function paintNamed(rarity, scale, alpha) {
+function paintPair(scale, alpha) {
+  const fit = scale * 0.55;
+  paintNamed(pairResult[0], fit, alpha, GAME_W / 2 - 155);
+  paintNamed(pairResult[1], fit, alpha, GAME_W / 2 + 155);
+}
+
+function paintNamed(rarity, scale, alpha, centerX = GAME_W / 2) {
   ctx.save();
-  ctx.translate(GAME_W / 2, 118);
+  ctx.translate(centerX, 118);
   ctx.scale(scale, scale);
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
   const hasPhoto = paintPhoto(rarity, -48, -106, 96);
@@ -2185,7 +2248,7 @@ function paintNamed(rarity, scale, alpha) {
   ctx.font = "22px Arial";
   const oddsWidth = Math.max(ctx.measureText(rarity.odds).width, ctx.measureText(rarity.chance).width) * scale;
   const oddsY = 118 + (nameY + 44) * scale;
-  const oddsOver = Math.abs(pointer.x - GAME_W / 2) <= oddsWidth / 2 + 6 && Math.abs(pointer.y - oddsY) <= 16 * scale;
+  const oddsOver = Math.abs(pointer.x - centerX) <= oddsWidth / 2 + 6 && Math.abs(pointer.y - oddsY) <= 16 * scale;
   ctx.fillText(oddsOver ? rarity.chance : rarity.odds, 0, nameY + 44);
   ctx.restore();
 }
@@ -2330,6 +2393,9 @@ function paintLuckTimer() {
   if (nextMulti > 1) {
     const stacked = (megaLeft ? 100 : luckNow()) * nextMulti;
     chips.push({ label: `${stacked}x next`, color: "#30dc60" });
+  } else if (nextMulti < 1) {
+    const parts = Math.round(1 / nextMulti);
+    chips.push({ label: parts > 1 ? `1/${parts} next` : `${nextMulti}x next`, color: "#c85070" });
   }
   if (cloverTier > 0) chips.push({ label: `${CLOVER_NAME[cloverTier - 1]} ${CLOVER_NOTE[cloverTier - 1]}`, color: "#30b448" });
   if (buffCount) chips.push({ label: `buff +${buffCount}`, color: "#ffc440" });
@@ -2427,6 +2493,7 @@ function paintGame() {
     roundButton(SHOP_BOX, "shop", heldName === "shop", "14px Arial");
     roundButton(BOARD_BOX, "board", heldName === "board", "14px Arial");
     roundButton(NAME_BOX, username || "set name", heldName === "name", "12px Arial");
+    roundButton(MUTE_BOX, musicMuted ? "muted" : "mute", heldName === "mute", "12px Arial");
     roundButton(RESET_BOX, resetTaps === 0 ? "reset" : `${resetTaps}/10`, heldName === "reset", "12px Arial");
   } else if (bestiaryOpen) {
     paintBestiary();
@@ -2553,6 +2620,7 @@ canvas.addEventListener("pointerup", (event) => {
       pullBoard();
     }
     if (name === "name") askName();
+    if (name === "mute") toggleMute();
     if (name === "reset") tapReset();
     if (name === "buy") buyLuck();
     if (name === "buy-speed") buySpeed();
