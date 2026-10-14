@@ -1429,31 +1429,47 @@ function ensurePlayer() {
   playerId = made.replace(/-/g, "");
 }
 
-const BOARD_ROOT = "https://mantledb.sh/v2/tyl-luck-board-7f3a";
+const BOARD_ROOT = "https://crudcrud.com/api/044d8f62f6434394856c5a1b8d82a897/players";
 
-function pushBest() {
+function boardFetch(url, options) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  return fetch(url, { ...(options || {}), signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
+async function pushBest() {
   if (!playerId && !username && !bestId) return;
   const created = !playerId;
   ensurePlayer();
   if (created) store();
-  fetch(`${BOARD_ROOT}/p/${playerId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: username, id: bestId }),
-  }).catch(() => {});
+  const body = { player: playerId, name: username, item: bestId };
+  try {
+    const listed = await (await boardFetch(BOARD_ROOT)).json();
+    const mine = (Array.isArray(listed) ? listed : []).find((row) => row.player === playerId);
+    if (mine && mine._id) {
+      await boardFetch(`${BOARD_ROOT}/${mine._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } else {
+      await boardFetch(BOARD_ROOT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    }
+  } catch (error) {}
 }
 
 async function pullBoard() {
   boardNote = "loading";
   boardRows = [];
   try {
-    const listed = await (await fetch("https://mantledb.sh/v2/list/tyl-luck-board-7f3a")).json();
+    const listed = await (await boardFetch(BOARD_ROOT)).json();
     const rows = [];
-    for (const entry of listed.entries || []) {
-      const path = String(entry.path || "");
-      if (!path.startsWith("p/")) continue;
-      const data = await (await fetch(`${BOARD_ROOT}/${path}`)).json();
-      const item = knownItem(data.id);
+    for (const data of Array.isArray(listed) ? listed : []) {
+      const item = knownItem(data.item);
       const name = cleanName(data.name);
       if (!item || !name) continue;
       rows.push({
@@ -1464,7 +1480,7 @@ async function pullBoard() {
         color: item.color,
         odds: item.odds,
         chance: item.chance,
-        player: path.slice(2),
+        player: data.player,
       });
     }
     rows.sort((a, b) => b.rarity - a.rarity);
@@ -1481,11 +1497,9 @@ function sameName(left, right) {
 
 async function nameTaken(wanted) {
   ensurePlayer();
-  const listed = await (await fetch("https://mantledb.sh/v2/list/tyl-luck-board-7f3a")).json();
-  for (const entry of listed.entries || []) {
-    const path = String(entry.path || "");
-    if (!path.startsWith("p/") || path.slice(2) === playerId) continue;
-    const data = await (await fetch(`${BOARD_ROOT}/${path}`)).json();
+  const listed = await (await boardFetch(BOARD_ROOT)).json();
+  for (const data of Array.isArray(listed) ? listed : []) {
+    if (data.player === playerId) continue;
     if (sameName(data.name, wanted)) return true;
   }
   return false;

@@ -1745,7 +1745,7 @@ def store_progress() -> None:
     SAVE.with_name("bestiary.lock").write_text("1", encoding="utf-8")
 
 
-BOARD_ROOT = "https://mantledb.sh/v2/tyl-luck-board-7f3a"
+BOARD_ROOT = "https://crudcrud.com/api/044d8f62f6434394856c5a1b8d82a897/players"
 
 
 def clean_name(raw: str) -> str:
@@ -1777,6 +1777,24 @@ def ensure_player() -> None:
         player_id = uuid.uuid4().hex
 
 
+def board_call(url: str, payload: dict | None = None, method: str | None = None):
+    data = None if payload is None else json.dumps(payload).encode("utf-8")
+    headers = {"User-Agent": "test-your-luck", "Accept": "application/json"}
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(url, data=data, method=method, headers=headers)
+    with urllib.request.urlopen(request, timeout=12) as response:
+        raw = response.read()
+    if not raw:
+        return None
+    return json.loads(raw.decode("utf-8"))
+
+
+def board_list() -> list:
+    listed = board_call(BOARD_ROOT)
+    return listed if isinstance(listed, list) else []
+
+
 def push_best() -> None:
     if not player_id and not username and not best_id:
         return
@@ -1784,18 +1802,15 @@ def push_best() -> None:
     ensure_player()
     if created:
         store_progress()
-    payload = json.dumps({"name": username, "id": best_id}).encode("utf-8")
-    target = f"{BOARD_ROOT}/p/{player_id}"
 
     def send() -> None:
         try:
-            request = urllib.request.Request(
-                target,
-                data=payload,
-                method="POST",
-                headers={"Content-Type": "application/json", "User-Agent": "test-your-luck"},
-            )
-            urllib.request.urlopen(request, timeout=12).read()
+            body = {"player": player_id, "name": username, "item": best_id}
+            mine = next((row for row in board_list() if row.get("player") == player_id), None)
+            if mine and mine.get("_id"):
+                board_call(f"{BOARD_ROOT}/{mine['_id']}", body, "PUT")
+            else:
+                board_call(BOARD_ROOT, body, "POST")
         except Exception:
             pass
 
@@ -1810,26 +1825,13 @@ def pull_board() -> None:
     def load() -> None:
         global board_rows, board_note
         try:
-            listing = urllib.request.Request(
-                "https://mantledb.sh/v2/list/tyl-luck-board-7f3a",
-                headers={"User-Agent": "test-your-luck"},
-            )
-            listed = json.loads(urllib.request.urlopen(listing, timeout=12).read().decode("utf-8"))
             rows = []
-            for entry in listed.get("entries") or []:
-                path = str(entry.get("path") or "")
-                if not path.startswith("p/"):
-                    continue
-                got = urllib.request.urlopen(
-                    urllib.request.Request(f"{BOARD_ROOT}/{path}", headers={"User-Agent": "test-your-luck"}),
-                    timeout=12,
-                )
-                data = json.loads(got.read().decode("utf-8"))
-                item = known_item(str(data.get("id") or ""))
+            for data in board_list():
+                item = known_item(str(data.get("item") or ""))
                 name = clean_name(str(data.get("name") or ""))
                 if item is None or not name:
                     continue
-                rows.append({"name": name, "item": item["name"], "rarity": int(item["rarity"]), "id": item["id"], "player": path[2:]})
+                rows.append({"name": name, "item": item["name"], "rarity": int(item["rarity"]), "id": item["id"], "player": str(data.get("player") or "")})
             rows.sort(key=lambda row: row["rarity"], reverse=True)
             board_rows = rows
             board_note = "" if rows else "nobody yet"
@@ -1845,20 +1847,9 @@ def same_name(left: str, right: str) -> bool:
 
 def name_taken(wanted: str) -> bool:
     ensure_player()
-    listing = urllib.request.Request(
-        "https://mantledb.sh/v2/list/tyl-luck-board-7f3a",
-        headers={"User-Agent": "test-your-luck"},
-    )
-    listed = json.loads(urllib.request.urlopen(listing, timeout=12).read().decode("utf-8"))
-    for entry in listed.get("entries") or []:
-        path = str(entry.get("path") or "")
-        if not path.startswith("p/") or path[2:] == player_id:
+    for data in board_list():
+        if str(data.get("player") or "") == player_id:
             continue
-        got = urllib.request.urlopen(
-            urllib.request.Request(f"{BOARD_ROOT}/{path}", headers={"User-Agent": "test-your-luck"}),
-            timeout=12,
-        )
-        data = json.loads(got.read().decode("utf-8"))
         if same_name(str(data.get("name") or ""), wanted):
             return True
     return False
