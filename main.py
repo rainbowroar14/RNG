@@ -278,6 +278,8 @@ RARITIES = (
     {"id": "godly lucky", "name": "godly lucky", "one_in": 37777, "rarity": 37777, "odds": "37,777", "color": (255, 140, 40)},
     {"id": "max lucky", "name": "max lucky", "one_in": 77777, "rarity": 77777, "odds": "77,777", "color": (255, 230, 120)},
     {"id": "double roll", "name": "double roll", "one_in": 25, "rarity": 25, "odds": "25", "color": (90, 170, 255)},
+    {"id": "triple roll", "name": "triple roll", "one_in": 350, "rarity": 350, "odds": "350", "color": (186, 120, 255)},
+    {"id": "quad roll", "name": "quad roll", "one_in": 500, "rarity": 500, "odds": "500", "color": (255, 176, 64)},
     {"id": "payday", "name": "payday", "one_in": 100, "rarity": 100, "odds": "100", "color": (48, 200, 80)},
     {"id": "unlucky", "name": "unlucky", "one_in": 100, "rarity": 100, "odds": "100", "color": (140, 90, 160)},
     {"id": "super unlucky", "name": "super unlucky", "one_in": 1000, "rarity": 1000, "odds": "1,000", "color": (190, 48, 58)},
@@ -1192,6 +1194,7 @@ FONT_16 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 16)
 FONT_22 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 22)
 FONT_28 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 28)
 FONT_46 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 46)
+FONT_NEW = ImageFont.truetype(r"C:\Windows\Fonts\arialbd.ttf", 18)
 FONT_COMIC = ImageFont.truetype(r"C:\Windows\Fonts\comic.ttf", 28)
 FONT_COMIC_SM = ImageFont.truetype(r"C:\Windows\Fonts\comic.ttf", 14)
 STAR_DIR = Path(__file__).with_name("stars")
@@ -1287,7 +1290,12 @@ roll_ready = 0.0
 next_multi = 1
 roll_boost = 1.0
 pair_result = None
+fresh_ids: set[str] = set()
+next_rolls = 1
+roll_2x = False
+pending_fan = None
 NEXT_MULTI = {"lucky": 2, "super lucky": 3, "ultra lucky": 5, "mega lucky": 10, "hyper lucky": 25, "insane lucky": 100, "godly lucky": 250, "max lucky": 1000, "unlucky": 0.5, "super unlucky": 0.2}
+ROLL_NEXT = {"double roll": 2, "triple roll": 3, "quad roll": 4}
 STRIP_TILE = 188
 payout_shown = 0
 payout_until = 0.0
@@ -1309,6 +1317,7 @@ CLOVER_LUCK = (1.0, 1.10, 1.25, 1.50, 1.70, 2.00, 2.10, 2.20, 2.70)
 CLOVER_NAME = ("4 leaf clover", "5 leaf clover", "6 leaf clover", "6.7 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover")
 CLOVER_NOTE = ("10% increase", "25% increase", "50% increase", "70% increase", "100% increase", "110% increase", "120% increase", "170% increase")
 AUTO_COST = 3000
+ROLL2_COST = 50000
 POTION_SECONDS = 300
 ROLL_BOX = (GAME_W // 2 - 74, 196, 148, 34)
 DEX_BOX = (GAME_W // 2 - 74, 242, 148, 30)
@@ -1321,7 +1330,8 @@ BUY_LUCK_BOX = (GAME_W // 2 - 220, 148, 140, 28)
 BUY_SPEED_BOX = (GAME_W // 2 + 80, 148, 140, 28)
 BUY_MEGA_BOX = (GAME_W // 2 - 220, 244, 140, 28)
 BUY_CLOVER_BOX = (GAME_W // 2 + 80, 244, 140, 28)
-BUY_AUTO_BOX = (GAME_W // 2 - 70, 324, 140, 28)
+BUY_AUTO_BOX = (GAME_W // 2 - 220, 324, 140, 28)
+BUY_ROLL2_BOX = (GAME_W // 2 + 80, 324, 140, 28)
 BACK_BOX = (GAME_W // 2 - 52, 368, 104, 28)
 
 
@@ -1694,8 +1704,10 @@ def progress_body() -> dict:
         "found": found,
         "mega_left": mega_left,
         "money": money,
+        "next_rolls": next_rolls,
         "player_id": player_id,
         "potion_until": potion_until,
+        "roll_2x": roll_2x,
         "rolls": roll_count,
         "speed_until": speed_until,
         "super_buff_count": super_buff_count,
@@ -1713,7 +1725,7 @@ def seal_text(payload: str) -> str:
 
 def apply_progress(data: dict) -> None:
     global roll_count, found, money, potion_until, speed_until, mega_left, clover_tier, autoclicker_owned, autoclicker_on
-    global username, player_id, best_id, best_rarity, buff_count, super_buff_count
+    global username, player_id, best_id, best_rarity, buff_count, super_buff_count, next_rolls, roll_2x
     roll_count = max(0, int(data.get("rolls", 0)))
     money = max(0, int(data.get("money", 0)))
     potion_until = float(data.get("potion_until", 0))
@@ -1733,6 +1745,8 @@ def apply_progress(data: dict) -> None:
     best_rarity = max(0, int(data.get("best_rarity", 0) or 0))
     buff_count = max(0, int(data.get("buff_count", 0) or 0))
     super_buff_count = max(0, int(data.get("super_buff_count", 0) or 0))
+    next_rolls = max(1, int(data.get("next_rolls", 1) or 1))
+    roll_2x = bool(data.get("roll_2x", False))
     sync_best_from_found()
 
 
@@ -1929,7 +1943,7 @@ def tap_reset() -> None:
     global reset_taps, money, roll_count, found, potion_until, speed_until, mega_left
     global clover_tier, autoclicker_owned, autoclicker_on, next_multi, spinning, pending_result
     global last_result, show_item, payout_until, roll_ready, land_zoom, land_zoom_target, peace_reveal
-    global username, best_id, best_rarity, buff_count, super_buff_count, pair_result
+    global username, best_id, best_rarity, buff_count, super_buff_count, pair_result, next_rolls, roll_2x, pending_fan, fresh_ids
     reset_taps += 1
     if reset_taps < 10:
         return
@@ -1943,6 +1957,10 @@ def tap_reset() -> None:
     autoclicker_owned = False
     autoclicker_on = False
     next_multi = 1
+    next_rolls = 1
+    roll_2x = False
+    pending_fan = None
+    fresh_ids = set()
     spinning = False
     pending_result = None
     last_result = None
@@ -2022,6 +2040,15 @@ def buy_autoclicker() -> None:
         autoclicker_on = True
     else:
         autoclicker_on = not autoclicker_on
+    store_progress()
+
+
+def buy_roll2() -> None:
+    global money, roll_2x
+    if roll_2x or money < ROLL2_COST:
+        return
+    money -= ROLL2_COST
+    roll_2x = True
     store_progress()
 
 
@@ -2135,7 +2162,7 @@ def enter_game() -> None:
 def begin_roll(auto: bool = False) -> None:
     global spinning, pending_result, roll_items, roll_times, roll_started, roll_i
     global show_zoom, show_alpha, land_zoom, land_zoom_target, peace_reveal, roll_pad, mega_left
-    global next_multi, money, roll_boost, pair_result
+    global next_multi, money, roll_boost, pair_result, next_rolls, pending_fan
     if spinning or bestiary_open or shop_open or time.perf_counter() < roll_ready:
         return
     if auto:
@@ -2151,7 +2178,10 @@ def begin_roll(auto: bool = False) -> None:
     roll_boost = boost
     next_multi = 1
     pair_result = None
-    pending_result = pick_rarity(boost)
+    count = max(2 if roll_2x else 1, next_rolls)
+    next_rolls = 1
+    pending_fan = [pick_rarity(boost) for _ in range(count)]
+    pending_result = pending_fan[0]
     count = 40
     roll_items = [pick_rarity(boost) for _ in range(count - 2)]
     roll_items.append(pending_result)
@@ -2236,7 +2266,7 @@ def spawn_burst(rarity: dict) -> None:
 
 
 def take_result(result: dict) -> int:
-    global money, buff_count, super_buff_count, best_id, best_rarity, next_multi
+    global money, buff_count, super_buff_count, best_id, best_rarity, next_multi, next_rolls
     pay = 5000 if result["id"] == "payday" else int(result["rarity"])
     money += pay
     slot = found.get(result["id"])
@@ -2252,41 +2282,43 @@ def take_result(result: dict) -> int:
         best_rarity = int(result["rarity"])
         best_id = result["id"]
     next_multi *= NEXT_MULTI.get(result["id"], 1)
+    queued = ROLL_NEXT.get(result["id"])
+    if queued:
+        next_rolls = max(next_rolls, queued)
     return pay
 
 
 def finish_roll() -> None:
     global spinning, last_result, roll_count, land_zoom_target, peace_reveal, peace_burst
-    global payout_shown, payout_until, roll_ready, pair_result
+    global payout_shown, payout_until, roll_ready, pair_result, fresh_ids
     if pending_result is None:
         spinning = False
         return
     spinning = False
     roll_ready = time.perf_counter() + 0.5
-    last_result = pending_result
+    fan = pending_fan or [pending_result]
+    last_result = fan[0]
     roll_count += 1
     paid_best = best_rarity
-    pay = take_result(pending_result)
-    pair_result = None
-    if pending_result["id"] == "double roll":
-        left = pick_rarity(roll_boost)
-        right = pick_rarity(roll_boost)
-        pair_result = (left, right)
-        pay += take_result(left)
-        pay += take_result(right)
+    pair_result = fan if len(fan) > 1 else None
+    fresh_ids = {item["id"] for item in fan if int(found.get(item["id"], {}).get("count", 0)) <= 0}
+    pay = 0
+    for item in fan:
+        pay += take_result(item)
     payout_shown = pay
     payout_until = time.perf_counter() + 1.4
     store_progress()
     if best_rarity > paid_best:
         push_best()
-    if pending_result["id"] == "la peace":
+    focus = None if pair_result else pending_result
+    if focus is not None and focus["id"] == "la peace":
         peace_reveal = 0.0
         peace_burst = False
-    else:
-        spawn_burst(pending_result)
-    if pending_result["id"] == "epic":
+    elif focus is not None:
+        spawn_burst(focus)
+    if focus is not None and focus["id"] == "epic":
         land_zoom_target = 1.18
-    elif pending_result["id"] == "legendary":
+    elif focus is not None and focus["id"] == "legendary":
         land_zoom_target = 1.36
     else:
         land_zoom_target = 1.0
@@ -2350,6 +2382,8 @@ def game_button_at(x: int, y: int) -> str | None:
             return "buy-clover"
         if shop_open and point_in(BUY_AUTO_BOX, x, y):
             return "buy-auto"
+        if shop_open and point_in(BUY_ROLL2_BOX, x, y):
+            return "buy-roll2"
         return "back" if point_in(BACK_BOX, x, y) else None
     if point_in(ROLL_BOX, x, y):
         return "roll"
@@ -2443,10 +2477,40 @@ def shown_odds(rarity: dict, hovered: bool) -> str:
     return rarity["chance"] if hovered else rarity["odds"]
 
 
-def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int, center_x: int = GAME_W // 2) -> None:
+def paint_new(frame: Image.Image, rarity: dict, scale: float, alpha: int, center_x: int, name_y: int, has_photo: bool) -> None:
+    if rarity["id"] not in fresh_ids or alpha <= 0 or scale <= 0:
+        return
+    bob = 1.0 + 0.1 * math.sin(time.perf_counter() * 6.4)
+    box = FONT_NEW.getbbox("NEW")
+    pad = 5
+    width = box[2] - box[0] + pad * 2
+    height = box[3] - box[1] + pad * 2
+    plate = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    ImageDraw.Draw(plate).text(
+        (pad - box[0], pad - box[1]),
+        "NEW",
+        font=FONT_NEW,
+        fill=(255, 225, 50, alpha),
+        stroke_width=3,
+        stroke_fill=(0, 0, 0, alpha),
+    )
+    plate = plate.rotate(18, expand=True, resample=Image.Resampling.BICUBIC)
+    fit = scale * bob
+    plate = plate.resize((max(1, int(plate.width * fit)), max(1, int(plate.height * fit))), Image.Resampling.BILINEAR)
+    if has_photo:
+        left = center_x - 46 * scale
+        top = 58 - 50 * scale
+    else:
+        left = center_x - 86 * scale
+        top = name_y - 42 * scale
+    frame.paste(plate, (int(left), int(top)), plate)
+
+
+def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int, center_x: int = GAME_W // 2, show_new: bool = False) -> None:
     name_y = 118
     picture = photos.get(rarity["id"])
-    if picture is not None and alpha > 0 and scale > 0:
+    has_photo = picture is not None and alpha > 0 and scale > 0
+    if has_photo:
         size = max(8, int(96 * scale))
         shot = picture.resize((size, size), Image.Resampling.BILINEAR)
         if alpha < 250:
@@ -2458,14 +2522,25 @@ def paint_named(frame: Image.Image, rarity: dict, scale: float, alpha: int, cent
     odds_y = name_y + 44
     label = shown_odds(rarity, hovering_center(center_x, odds_y, rarity, FONT_22, scale))
     paint_line(frame, label, FONT_22, rarity["color"], center_x, odds_y, scale, alpha)
+    if show_new:
+        paint_new(frame, rarity, scale, alpha, center_x, name_y, has_photo)
+
+
+def fan_spots(count: int) -> list[tuple[int, float]]:
+    if count == 2:
+        return [(GAME_W // 2 - 155, 0.55), (GAME_W // 2 + 155, 0.55)]
+    if count == 3:
+        return [(GAME_W // 2 - 200, 0.46), (GAME_W // 2, 0.46), (GAME_W // 2 + 200, 0.46)]
+    gap = 150
+    start = GAME_W / 2 - gap * (count - 1) / 2
+    return [(int(start + gap * index), 0.38) for index in range(count)]
 
 
 def paint_pair(frame: Image.Image, scale: float, alpha: int) -> None:
     if not pair_result:
         return
-    fit = scale * 0.55
-    paint_named(frame, pair_result[0], fit, alpha, GAME_W // 2 - 155)
-    paint_named(frame, pair_result[1], fit, alpha, GAME_W // 2 + 155)
+    for item, (center, fit) in zip(pair_result, fan_spots(len(pair_result))):
+        paint_named(frame, item, scale * fit, alpha, center, True)
 
 
 def paint_roll(frame: Image.Image) -> None:
@@ -2473,27 +2548,27 @@ def paint_roll(frame: Image.Image) -> None:
     scale = show_zoom * (1.0 if spinning else land_zoom)
     if spinning and roll_i < 0 and last_result is not None:
         fade = max(0, int(255 * (1 - elapsed / 0.14)))
-        if pair_result and last_result["id"] == "double roll":
+        if pair_result:
             paint_pair(frame, 1, fade)
         else:
-            paint_named(frame, last_result, 1, fade)
+            paint_named(frame, last_result, 1, fade, show_new=True)
         return
     shown = show_item if spinning and show_item is not None else last_result
     if shown is None:
         paint_line(frame, "roll", FONT_46, (220, 220, 220), GAME_W / 2, 136, 1, 255)
         return
     alpha = show_alpha if spinning else 255
+    if not spinning and pair_result:
+        paint_pair(frame, scale, alpha)
+        return
     if shown["id"] == "la peace" and spinning:
         paint_named(frame, diamond_face(), scale, alpha)
         return
     if shown["id"] == "la peace":
         paint_named(frame, diamond_face(), scale, int(alpha * (1 - peace_reveal)))
-        paint_named(frame, shown, scale, int(alpha * peace_reveal))
+        paint_named(frame, shown, scale, int(alpha * peace_reveal), show_new=True)
         return
-    if not spinning and pair_result and shown["id"] == "double roll":
-        paint_pair(frame, scale, alpha)
-        return
-    paint_named(frame, shown, scale, alpha)
+    paint_named(frame, shown, scale, alpha, show_new=not spinning)
 
 
 def paint_bestiary(frame: Image.Image) -> None:
@@ -2585,8 +2660,10 @@ def paint_shop(frame: Image.Image) -> None:
     pen.text((speed_x, 196), CLOVER_NAME[leaf], font=FONT_22, fill=(48, 180, 72, 255), anchor="mm")
     pen.text((speed_x, 214), CLOVER_NOTE[leaf], font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
     pen.text((speed_x, 230), "owned" if owned else money_text(CLOVER_COST[clover_tier]), font=FONT_16, fill=(48, 180, 72, 255), anchor="mm")
-    pen.text((GAME_W / 2, 292), "autoclicker", font=FONT_22, fill=(255, 140, 80, 255), anchor="mm")
-    pen.text((GAME_W / 2, 310), "$3 a roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((luck_x, 292), "autoclicker", font=FONT_22, fill=(255, 140, 80, 255), anchor="mm")
+    pen.text((luck_x, 310), "$3 a roll", font=FONT_16, fill=(220, 220, 220, 255), anchor="mm")
+    pen.text((speed_x, 292), "roll 2x", font=FONT_22, fill=(90, 170, 255, 255), anchor="mm")
+    pen.text((speed_x, 310), "2 at once" if roll_2x else money_text(ROLL2_COST), font=FONT_16, fill=(90, 170, 255, 255), anchor="mm")
     paint_ui_button(frame, BUY_LUCK_BOX, "buy", held_name == "buy" or money < POTION_COST, FONT_16)
     paint_ui_button(frame, BUY_SPEED_BOX, "buy", held_name == "buy-speed" or money < SPEED_COST, FONT_16)
     paint_ui_button(frame, BUY_MEGA_BOX, "buy", held_name == "buy-mega" or money < MEGA_COST, FONT_16)
@@ -2599,6 +2676,8 @@ def paint_shop(frame: Image.Image) -> None:
         auto_label = "buy"
         auto_held = held_name == "buy-auto" or money < AUTO_COST
     paint_ui_button(frame, BUY_AUTO_BOX, auto_label, auto_held, FONT_16)
+    roll2_held = roll_2x or held_name == "buy-roll2" or money < ROLL2_COST
+    paint_ui_button(frame, BUY_ROLL2_BOX, "owned" if roll_2x else "buy", roll2_held, FONT_16)
     paint_ui_button(frame, BACK_BOX, "back", held_name == "back", FONT_14)
 
 
@@ -2633,6 +2712,14 @@ def paint_luck_timer(frame: Image.Image) -> None:
         chips.append((title, (120, 210, 255, 255)))
     if autoclicker_on:
         chips.append(("auto", (255, 140, 80, 255)))
+    if next_rolls >= 4:
+        chips.append(("quad next", (255, 176, 64, 255)))
+    elif next_rolls == 3:
+        chips.append(("triple next", (186, 120, 255, 255)))
+    elif next_rolls == 2 and not roll_2x:
+        chips.append(("double next", (90, 170, 255, 255)))
+    if roll_2x:
+        chips.append(("roll 2x", (90, 170, 255, 255)))
     pen = ImageDraw.Draw(frame)
     height = 26
     for index, (label, color) in enumerate(chips):
@@ -2791,6 +2878,8 @@ def on_release(event: tk.Event) -> None:
             buy_clover()
         elif chosen == "buy-auto":
             buy_autoclicker()
+        elif chosen == "buy-roll2":
+            buy_roll2()
         elif chosen == "back":
             bestiary_open = False
             shop_open = False
