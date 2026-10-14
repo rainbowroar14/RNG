@@ -1183,6 +1183,8 @@ FONT_16 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 16)
 FONT_22 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 22)
 FONT_28 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 28)
 FONT_46 = ImageFont.truetype(r"C:\Windows\Fonts\arial.ttf", 46)
+FONT_COMIC = ImageFont.truetype(r"C:\Windows\Fonts\comic.ttf", 28)
+FONT_COMIC_SM = ImageFont.truetype(r"C:\Windows\Fonts\comic.ttf", 14)
 STAR_DIR = Path(__file__).with_name("stars")
 PHOTO_DIR = Path(__file__).with_name("photos")
 PHOTO_SETS = 5
@@ -1217,8 +1219,8 @@ canvas.pack()
 landed: list[dict] = []
 falling: list[dict] = []
 flash_alpha = 0
-play_alpha = 0
-intro_done = False
+play_alpha = 255
+intro_done = True
 intro_fading = False
 music_started = False
 playlist: list[Path] = []
@@ -1290,10 +1292,10 @@ reset_taps = 0
 POTION_COST = 375
 SPEED_COST = 450
 MEGA_COST = 12000
-CLOVER_COST = (1000, 2500, 10000, 100000, 250000, 500000, 1000000)
-CLOVER_LUCK = (1.0, 1.10, 1.25, 1.50, 1.80, 1.90, 2.00, 2.50)
-CLOVER_NAME = ("4 leaf clover", "5 leaf clover", "6 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover")
-CLOVER_NOTE = ("10% increase", "25% increase", "50% increase", "80% increase", "90% increase", "100% increase", "150% increase")
+CLOVER_COST = (1000, 2500, 10000, 30000, 100000, 250000, 500000, 1000000)
+CLOVER_LUCK = (1.0, 1.10, 1.25, 1.50, 1.70, 2.00, 2.10, 2.20, 2.70)
+CLOVER_NAME = ("4 leaf clover", "5 leaf clover", "6 leaf clover", "6.7 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover")
+CLOVER_NOTE = ("10% increase", "25% increase", "50% increase", "70% increase", "100% increase", "110% increase", "120% increase", "170% increase")
 AUTO_COST = 3000
 POTION_SECONDS = 300
 ROLL_BOX = (GAME_W // 2 - 74, 196, 148, 34)
@@ -1549,16 +1551,13 @@ def paint_button(frame: Image.Image) -> None:
         outline=(0, 0, 0, play_alpha),
         width=2,
     )
-    pen.text((play_box[2] / 2, play_box[3] / 2), "start", font=FONT_12, fill=(0, 0, 0, play_alpha), anchor="mm")
+    pen.text((play_box[2] / 2, play_box[3] / 2), "start", font=FONT_COMIC_SM, fill=(0, 0, 0, play_alpha), anchor="mm")
     frame.paste(button, (play_box[0], play_box[1]), button)
 
 
 def compose(env: dict | None, pos: float | None) -> Image.Image:
     stage = Image.new("RGBA", (WIDTH, STAGE_H), (20, 20, 20, 255))
-    for word in landed:
-        blit(stage, word["image"], word["x"], word["y"])
-    for item in falling:
-        blit(stage, item["image"], item["spec"]["x"], item["y"])
+    ImageDraw.Draw(stage).text((WIDTH / 2, STAGE_H / 2 - 24), "test ur luck", font=FONT_COMIC, fill=INK, anchor="mm")
     if zoom > 1.004:
         scaled_w = int(WIDTH * zoom)
         scaled_h = int(STAGE_H * zoom)
@@ -1667,6 +1666,7 @@ def progress_body() -> dict:
         "best_id": best_id,
         "best_rarity": best_rarity,
         "buff_count": buff_count,
+        "clover_67": True,
         "clover_tier": clover_tier,
         "found": found,
         "mega_left": mega_left,
@@ -1696,7 +1696,10 @@ def apply_progress(data: dict) -> None:
     potion_until = float(data.get("potion_until", 0))
     speed_until = float(data.get("speed_until", 0))
     mega_left = max(0, int(data.get("mega_left", 0)))
-    clover_tier = min(len(CLOVER_NAME), max(0, int(data.get("clover_tier", 0))))
+    clover_tier = max(0, int(data.get("clover_tier", 0)))
+    if data.get("clover_67") is None and clover_tier >= 4:
+        clover_tier += 1
+    clover_tier = min(len(CLOVER_NAME), clover_tier)
     autoclicker_owned = bool(data.get("autoclicker_owned", False))
     autoclicker_on = bool(data.get("autoclicker_on", False)) and autoclicker_owned
     loaded = data.get("found", {})
@@ -1729,6 +1732,8 @@ def load_progress() -> None:
             return
         if isinstance(saved, dict):
             apply_progress(saved)
+            if saved.get("clover_67") is None:
+                store_progress()
         return
     if SAVE.with_name("bestiary.lock").exists():
         return
@@ -2779,5 +2784,4 @@ canvas.bind("<ButtonRelease-1>", on_release)
 canvas.bind("<MouseWheel>", on_wheel)
 root.protocol("WM_DELETE_WINDOW", close)
 draw()
-root.after(200, start_intro)
 root.mainloop()

@@ -1237,10 +1237,10 @@ const BACK_BOX = { x: GAME_W / 2 - 52, y: 368, w: 104, h: 28 };
 const POTION_COST = 375;
 const SPEED_COST = 450;
 const MEGA_COST = 12000;
-const CLOVER_COST = [1000, 2500, 10000, 100000, 250000, 500000, 1000000];
-const CLOVER_LUCK = [1, 1.1, 1.25, 1.5, 1.8, 1.9, 2, 2.5];
-const CLOVER_NAME = ["4 leaf clover", "5 leaf clover", "6 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover"];
-const CLOVER_NOTE = ["10% increase", "25% increase", "50% increase", "80% increase", "90% increase", "100% increase", "150% increase"];
+const CLOVER_COST = [1000, 2500, 10000, 30000, 100000, 250000, 500000, 1000000];
+const CLOVER_LUCK = [1, 1.1, 1.25, 1.5, 1.7, 2, 2.1, 2.2, 2.7];
+const CLOVER_NAME = ["4 leaf clover", "5 leaf clover", "6 leaf clover", "6.7 leaf clover", "7 leaf clover", "8 leaf clover", "9 leaf clover", "10 leaf clover"];
+const CLOVER_NOTE = ["10% increase", "25% increase", "50% increase", "70% increase", "100% increase", "110% increase", "120% increase", "170% increase"];
 const AUTO_COST = 3000;
 const POTION_MS = 5 * 60 * 1000;
 
@@ -1283,7 +1283,7 @@ let introBegun = false;
 let landed = WORDS.map(() => false);
 let flash = 0;
 let startAlpha = 0;
-let introDone = false;
+let introDone = true;
 let musicStarted = false;
 let heldStart = false;
 let heldName = null;
@@ -1338,6 +1338,7 @@ function progressBody() {
     bestId,
     bestRarity,
     buffCount,
+    clover67: true,
     cloverTier,
     found,
     megaLeft,
@@ -1358,7 +1359,9 @@ function applyProgress(saved) {
   potionUntil = saved.potionUntil || 0;
   speedUntil = saved.speedUntil || 0;
   megaLeft = Math.max(0, saved.megaLeft || 0);
-  cloverTier = Math.min(CLOVER_NAME.length, Math.max(0, saved.cloverTier || 0));
+  cloverTier = Math.max(0, saved.cloverTier || 0);
+  if (saved.clover67 == null && cloverTier >= 4) cloverTier += 1;
+  cloverTier = Math.min(CLOVER_NAME.length, cloverTier);
   autoclickerOwned = !!saved.autoclickerOwned;
   autoclickerOn = !!saved.autoclickerOn && autoclickerOwned;
   username = cleanName(saved.username || "");
@@ -1390,7 +1393,10 @@ function load() {
     if (wrapped.seal !== sealText(wrapped.body)) return;
     try {
       const saved = JSON.parse(wrapped.body);
-      if (saved && typeof saved === "object") applyProgress(saved);
+      if (saved && typeof saved === "object") {
+        applyProgress(saved);
+        if (saved.clover67 == null) store();
+      }
     } catch (error) {
       return;
     }
@@ -2097,27 +2103,16 @@ function paintWords(now) {
   ctx.restore();
 }
 
-function paintIntro(now) {
+function paintIntro() {
   ctx.fillStyle = "#141414";
   ctx.fillRect(0, 0, INTRO_W, INTRO_H);
-  if (introBegun) paintWords(now - introStart);
-  else {
-    ctx.fillStyle = "#f4f4f4";
-    ctx.font = "16px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("click", INTRO_W / 2, STAGE_H / 2);
-  }
+  ctx.fillStyle = "#f4f4f4";
+  ctx.font = "28px \"Comic Sans MS\", \"Comic Sans\", cursive";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("test ur luck", INTRO_W / 2, STAGE_H / 2 - 24);
   paintBars();
-  if (startAlpha > 0) {
-    ctx.globalAlpha = startAlpha / 255;
-    roundButton(START_BOX, "start", heldStart, "12px Arial");
-    ctx.globalAlpha = 1;
-  }
-  if (flash > 0) {
-    ctx.fillStyle = `rgba(255,255,255,${flash / 255})`;
-    ctx.fillRect(0, 0, INTRO_W, INTRO_H);
-  }
+  roundButton(START_BOX, "start", heldStart, "14px \"Comic Sans MS\", \"Comic Sans\", cursive");
 }
 
 function stripPos(elapsed) {
@@ -2471,7 +2466,7 @@ function frame(now) {
       }
     }
     flash = Math.max(0, flash - dt * 1100);
-    paintIntro(elapsed);
+    paintIntro();
   } else {
     if (spinning && rollTimes.length) {
       const elapsed = (now - rollStarted) / 1000;
@@ -2520,9 +2515,7 @@ canvas.addEventListener("pointermove", (event) => {
 
 canvas.addEventListener("pointerdown", (event) => {
   resumeAudio();
-  if (!introBegun) beginIntro();
-  else if (!musicStarted && introDone) startPlaylist();
-  else if (!musicStarted && combo.paused) playCombo();
+  if (!musicStarted && introDone && mode === "game") startPlaylist();
   const pos = pointerPos(event);
   pointer = { ...pos, down: true };
   const name = buttonAt(pos.x, pos.y);
