@@ -272,6 +272,11 @@ RARITIES = (
     {"id": "lucky", "name": "lucky", "one_in": 25, "rarity": 25, "odds": "25", "color": (48, 180, 72)},
     {"id": "super lucky", "name": "super lucky", "one_in": 252, "rarity": 252, "odds": "252", "color": (36, 200, 96)},
     {"id": "ultra lucky", "name": "ultra lucky", "one_in": 777, "rarity": 777, "odds": "777", "color": (255, 206, 48)},
+    {"id": "mega lucky", "name": "mega lucky", "one_in": 2777, "rarity": 2777, "odds": "2,777", "color": (64, 220, 90)},
+    {"id": "hyper lucky", "name": "hyper lucky", "one_in": 7777, "rarity": 7777, "odds": "7,777", "color": (90, 230, 160)},
+    {"id": "insane lucky", "name": "insane lucky", "one_in": 17777, "rarity": 17777, "odds": "17,777", "color": (255, 196, 48)},
+    {"id": "godly lucky", "name": "godly lucky", "one_in": 37777, "rarity": 37777, "odds": "37,777", "color": (255, 140, 40)},
+    {"id": "max lucky", "name": "max lucky", "one_in": 77777, "rarity": 77777, "odds": "77,777", "color": (255, 230, 120)},
     {"id": "1", "name": "1", "one_in": 1, "rarity": 1, "odds": "1", "color": (210, 220, 235)},
     {"id": "normal", "name": "normal", "one_in": 2, "odds": "1 in 2", "color": (226, 226, 226)},
     {"id": "🐉", "name": "🐉", "one_in": 1600, "rarity": 1600, "odds": "1,600", "color": (233, 193, 143)},
@@ -1275,7 +1280,7 @@ roll_over = 0.26
 roll_back = 0.42
 roll_ready = 0.0
 next_multi = 1
-NEXT_MULTI = {"lucky": 2, "super lucky": 3, "ultra lucky": 5}
+NEXT_MULTI = {"lucky": 2, "super lucky": 3, "ultra lucky": 5, "mega lucky": 10, "hyper lucky": 25, "insane lucky": 100, "godly lucky": 250, "max lucky": 1000}
 STRIP_TILE = 188
 payout_shown = 0
 payout_until = 0.0
