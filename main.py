@@ -1257,6 +1257,8 @@ pointer_x = -1.0
 pointer_y = -1.0
 spinning = False
 roll_items: list[dict] = []
+roll_strips: list[list[dict]] | None = None
+show_items: list[dict] | None = None
 roll_times: list[float] = []
 roll_started = 0.0
 roll_i = -1
@@ -1943,7 +1945,7 @@ def tap_reset() -> None:
     global reset_taps, money, roll_count, found, potion_until, speed_until, mega_left
     global clover_tier, autoclicker_owned, autoclicker_on, next_multi, spinning, pending_result
     global last_result, show_item, payout_until, roll_ready, land_zoom, land_zoom_target, peace_reveal
-    global username, best_id, best_rarity, buff_count, super_buff_count, pair_result, next_rolls, roll_2x, pending_fan, fresh_ids
+    global username, best_id, best_rarity, buff_count, super_buff_count, pair_result, next_rolls, roll_2x, pending_fan, fresh_ids, roll_strips, show_items
     reset_taps += 1
     if reset_taps < 10:
         return
@@ -1961,6 +1963,8 @@ def tap_reset() -> None:
     roll_2x = False
     pending_fan = None
     fresh_ids = set()
+    roll_strips = None
+    show_items = None
     spinning = False
     pending_result = None
     last_result = None
@@ -2160,7 +2164,7 @@ def enter_game() -> None:
 
 
 def begin_roll(auto: bool = False) -> None:
-    global spinning, pending_result, roll_items, roll_times, roll_started, roll_i
+    global spinning, pending_result, roll_items, roll_strips, roll_times, roll_started, roll_i
     global show_zoom, show_alpha, land_zoom, land_zoom_target, peace_reveal, roll_pad, mega_left
     global next_multi, money, roll_boost, pair_result, next_rolls, pending_fan
     if spinning or bestiary_open or shop_open or time.perf_counter() < roll_ready:
@@ -2182,9 +2186,20 @@ def begin_roll(auto: bool = False) -> None:
     next_rolls = 1
     pending_fan = [pick_rarity(boost) for _ in range(count)]
     pending_result = pending_fan[0]
-    count = 40
-    roll_items = [pick_rarity(boost) for _ in range(count - 2)]
-    roll_items.append(pending_result)
+    strip_count = 40
+    if len(pending_fan) > 1:
+        roll_strips = []
+        for final in pending_fan:
+            strip = [pick_rarity(boost) for _ in range(strip_count - 2)]
+            strip.append(final)
+            roll_strips.append(strip)
+        roll_items = roll_strips[0]
+    else:
+        roll_strips = None
+        roll_items = [pick_rarity(boost) for _ in range(strip_count - 2)]
+        roll_items.append(pending_result)
+    show_items = None
+    count = strip_count
     roll_times = []
     pace = speed_now() * 1.25 * gambler_pace()
     moment = 0.14 / pace
@@ -2298,7 +2313,7 @@ def finish_roll() -> None:
     roll_ready = time.perf_counter() + 0.5
     fan = pending_fan or [pending_result]
     last_result = fan[0]
-    roll_count += 1
+    roll_count += len(fan)
     paid_best = best_rarity
     pair_result = fan if len(fan) > 1 else None
     fresh_ids = {item["id"] for item in fan if int(found.get(item["id"], {}).get("count", 0)) <= 0}
@@ -2325,13 +2340,15 @@ def finish_roll() -> None:
 
 
 def tick_spin() -> None:
-    global roll_i, show_item, show_zoom, show_alpha, land_zoom, peace_reveal, peace_burst
+    global roll_i, show_item, show_items, show_zoom, show_alpha, land_zoom, peace_reveal, peace_burst
     now = time.perf_counter()
     if spinning and roll_times:
         elapsed = now - roll_started
         while roll_i + 1 < len(roll_items) and elapsed >= roll_times[roll_i + 1]:
             roll_i += 1
             show_item = roll_items[roll_i]
+            if roll_strips:
+                show_items = [strip[roll_i] for strip in roll_strips]
             show_zoom = 1.07
             show_alpha = 60
             play_tick()
@@ -2552,6 +2569,11 @@ def paint_roll(frame: Image.Image) -> None:
             paint_pair(frame, 1, fade)
         else:
             paint_named(frame, last_result, 1, fade, show_new=True)
+        return
+    if spinning and roll_strips and show_items:
+        alpha = show_alpha
+        for item, (center, fit) in zip(show_items, fan_spots(len(show_items))):
+            paint_named(frame, item, scale * fit, alpha, center, False)
         return
     shown = show_item if spinning and show_item is not None else last_result
     if shown is None:

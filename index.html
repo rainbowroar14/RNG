@@ -1313,6 +1313,8 @@ let bestiaryOpen = false;
 let bestiaryScroll = 0;
 let spinning = false;
 let rollItems = [];
+let rollStrips = null;
+let showItems = null;
 let rollTimes = [];
 let rollStarted = 0;
 let rollIndex = -1;
@@ -1900,8 +1902,19 @@ function beginRoll(auto = false) {
   pendingFan = fan;
   const result = fan[0];
   const count = 40;
-  rollItems = Array.from({ length: count - 2 }, () => pickRarity(boost));
-  rollItems.push(result);
+  if (fanCount > 1) {
+    rollStrips = fan.map((finalItem) => {
+      const strip = Array.from({ length: count - 2 }, () => pickRarity(boost));
+      strip.push(finalItem);
+      return strip;
+    });
+    rollItems = rollStrips[0];
+  } else {
+    rollStrips = null;
+    rollItems = Array.from({ length: count - 2 }, () => pickRarity(boost));
+    rollItems.push(result);
+  }
+  showItems = null;
   rollTimes = [];
   const pace = speedNow() * 1.25 * gamblerPace();
   rollPad = 0.06 / pace;
@@ -1946,7 +1959,7 @@ function finishRoll() {
   const result = rollItems[rollItems.length - 1];
   const fan = pendingFan && pendingFan.length ? pendingFan : [result];
   lastResult = fan[0];
-  rolls += 1;
+  rolls += fan.length;
   const paidBest = bestRarity;
   pairResult = fan.length > 1 ? fan : null;
   freshIds = new Set();
@@ -1998,6 +2011,8 @@ function tapReset() {
   freshIds = new Set();
   spinning = false;
   rollItems = [];
+  rollStrips = null;
+  showItems = null;
   lastResult = null;
   pairResult = null;
   showItem = null;
@@ -2230,6 +2245,14 @@ function paintRoll() {
   if (spinning && rollIndex < 0 && lastResult) {
     if (pairResult) paintPair(1, Math.max(0, 1 - elapsed / 0.14));
     else paintNamed(lastResult, 1, Math.max(0, 1 - elapsed / 0.14), GAME_W / 2, true);
+    return;
+  }
+  if (spinning && rollStrips && showItems) {
+    const spots = fanSpots(rollStrips.length);
+    showItems.forEach((item, index) => {
+      const [center, fit] = spots[index];
+      paintNamed(item, scale * fit, alpha, center, false);
+    });
     return;
   }
   const shown = spinning && showItem ? showItem : lastResult;
@@ -2613,6 +2636,7 @@ function frame(now) {
       while (rollIndex + 1 < rollItems.length && elapsed >= rollTimes[rollIndex + 1]) {
         rollIndex += 1;
         showItem = rollItems[rollIndex];
+        if (rollStrips) showItems = rollStrips.map((strip) => strip[rollIndex]);
         showZoom = 1.07;
         showAlpha = 60;
         playTick();
